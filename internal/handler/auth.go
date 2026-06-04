@@ -3,18 +3,23 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"techzone/internal/config"
 	"techzone/internal/service"
+	"techzone/pkg/jwt"
 )
 
 type AuthHandler struct {
 	authService *service.AuthService
+	cfg         *config.Config
 }
 
 func NewAuthHandler(
 	authService *service.AuthService,
+	cfg *config.Config,
 ) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		cfg:         cfg,
 	}
 }
 
@@ -71,21 +76,36 @@ func (h *AuthHandler) Login(
 		return
 	}
 
-	err := h.authService.Login(
+	user, err := h.authService.Login(
 		r.Context(),
 		req,
 	)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	token, err := jwt.GenerateToken(
+		user.ID,
+		user.Login,
+		user.Role,
+		h.cfg.JWTSecret,
+	)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(http.StatusOK)
 
-	if err := json.NewEncoder(w).Encode(map[string]string{
-		"message": "login successful",
-	},
+	if err := json.NewEncoder(w).Encode(
+		map[string]string{
+			"message": "login successful",
+			"token":   token,
+		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return

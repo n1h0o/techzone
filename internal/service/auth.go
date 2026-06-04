@@ -80,12 +80,12 @@ func (s *AuthService) Register(
 func (s *AuthService) Login(
 	ctx context.Context,
 	input LoginInput,
-) error {
+) (*model.User, error) {
 	if input.Login == "" {
-		return errors.New("login is required")
+		return nil, errors.New("login is required")
 	}
 	if input.Password == "" {
-		return errors.New("password is required")
+		return nil, errors.New("password is required")
 	}
 
 	user, err := s.userRepo.GetByLogin(
@@ -93,14 +93,14 @@ func (s *AuthService) Login(
 		input.Login,
 	)
 	if err != nil {
-		return errors.New("invalid login or password")
+		return nil, errors.New("invalid login or password")
 	}
 	err = bcrypt.CompareHashAndPassword(
 		[]byte(user.PasswordHash),
 		[]byte(input.Password),
 	)
 	if err != nil {
-		return errors.New("invalid login or password")
+		return nil, errors.New("invalid login or password")
 	}
-	return nil
+	return user, nil
 }

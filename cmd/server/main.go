@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"techzone/internal/config"
 	"techzone/internal/handler"
 	"techzone/internal/repository"
 	"techzone/internal/service"
@@ -10,6 +11,7 @@ import (
 )
 
 func main() {
+	cfg := config.Load()
 	db := postgres.New()
 	defer db.Close()
 
@@ -17,7 +19,7 @@ func main() {
 
 	authService := service.NewAuthService(userRepo)
 
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, cfg)
 
 	mux := http.NewServeMux()
 
