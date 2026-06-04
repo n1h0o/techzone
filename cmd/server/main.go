@@ -13,18 +13,19 @@ func main() {
 	db := postgres.New()
 	defer db.Close()
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /health", handler.GetHealth)
-	log.Println("server started on :8080")
-
 	userRepo := repository.NewUserRepository(db)
 
 	authService := service.NewAuthService(userRepo)
 
 	authHandler := handler.NewAuthHandler(authService)
 
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /health", handler.GetHealth)
 	mux.HandleFunc("POST /register", authHandler.Register)
+	mux.HandleFunc("POST /login", authHandler.Login)
+
+	log.Println("server started on :8080")
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)

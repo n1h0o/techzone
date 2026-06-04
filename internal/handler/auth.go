@@ -54,3 +54,40 @@ func (h *AuthHandler) Register(
 	},
 	)
 }
+
+func (h *AuthHandler) Login(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req service.LoginInput
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := h.authService.Login(
+		r.Context(),
+		req,
+	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(map[string]string{
+		"message": "login successful",
+	},
+	); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+}
