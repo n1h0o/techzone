@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"techzone/internal/config"
 	"techzone/internal/handler"
+	"techzone/internal/middleware"
 	"techzone/internal/repository"
 	"techzone/internal/service"
 	"techzone/pkg/postgres"
@@ -26,6 +27,7 @@ func main() {
 	mux.HandleFunc("GET /health", handler.GetHealth)
 	mux.HandleFunc("POST /register", authHandler.Register)
 	mux.HandleFunc("POST /login", authHandler.Login)
+	mux.Handle("GET /me", middleware.AuthMiddleware(cfg)(http.HandlerFunc(handler.GetMe)))
 
 	log.Println("server started on :8080")
 
