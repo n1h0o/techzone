@@ -14,3 +14,6 @@ fmt:
 
 vet:
 	go vet ./...
+
+migrate-up:
+	goose -dir migrations postgres "$(DB_URL)" up
