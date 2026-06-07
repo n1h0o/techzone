@@ -8,5 +8,5 @@ type Product struct {
 	Description string
 	Price       int64
 	Stock       int
-	CreateAt    time.Time
+	CreatedAt   time.Time
 }
