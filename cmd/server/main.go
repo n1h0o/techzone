@@ -31,9 +31,25 @@ func main() {
 	mux.HandleFunc("GET /health", handler.GetHealth)
 	mux.HandleFunc("POST /register", authHandler.Register)
 	mux.HandleFunc("POST /login", authHandler.Login)
-	mux.Handle("GET /me", middleware.AuthMiddleware(cfg)(http.HandlerFunc(handler.GetMe)))
+	mux.Handle(
+		"GET /me",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(
+				handler.GetMe,
+			),
+		),
+	)
 	mux.HandleFunc("GET /products", productHandler.GetProducts)
-	mux.HandleFunc("POST /products", productHandler.CreateProduct)
+	mux.Handle(
+		"POST /products",
+		middleware.AuthMiddleware(cfg)(
+			middleware.AdminMiddleware(
+				http.HandlerFunc(
+					productHandler.CreateProduct,
+				),
+			),
+		),
+	)
 	mux.HandleFunc("GET /products/{id}", productHandler.GetProduct)
 
 	log.Println("server started on :8080")
