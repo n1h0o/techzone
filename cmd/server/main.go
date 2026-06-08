@@ -26,6 +26,10 @@ func main() {
 	productService := service.NewProductService(productRepo)
 	productHandler := handler.NewProductHandler(productService)
 
+	cartRepo := repository.NewCartRepository(db)
+	cartService := service.NewCartService(cartRepo)
+	cartHandler := handler.NewCartHandler(cartService)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handler.GetHealth)
@@ -51,6 +55,28 @@ func main() {
 		),
 	)
 	mux.HandleFunc("GET /products/{id}", productHandler.GetProduct)
+	mux.Handle(
+		"POST /cart/items",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(
+				cartHandler.AddToCart,
+			),
+		),
+	)
+	mux.Handle(
+		"GET /cart",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(cartHandler.GetCart),
+		),
+	)
+	mux.Handle(
+		"DELETE /cart/items/{item_id}",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(
+				cartHandler.DeleteItem,
+			),
+		),
+	)
 
 	log.Println("server started on :8080")
 

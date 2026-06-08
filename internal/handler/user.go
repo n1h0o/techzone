@@ -14,6 +14,11 @@ type MeResponse struct {
 }
 
 func GetMe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "only GET method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	claims, ok := r.Context().Value(middleware.UserKey).(*jwt.Claims)
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
