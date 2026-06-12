@@ -4,16 +4,14 @@ import (
 	"context"
 	"errors"
 	"techzone/internal/model"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CartRepository struct {
-	db *pgxpool.Pool
+	db DBTX
 }
 
 func NewCartRepository(
-	db *pgxpool.Pool,
+	db DBTX,
 ) *CartRepository {
 	return &CartRepository{
 		db: db,
@@ -103,6 +101,7 @@ func (r *CartRepository) GetCart(
 		ctx,
 		`
 		SELECT 
+		ci.id,
 		p.id,
 		p.name,
 		p.price,
@@ -124,6 +123,7 @@ func (r *CartRepository) GetCart(
 	for rows.Next() {
 		var item model.CartItemInfo
 		if err := rows.Scan(
+			&item.ID,
 			&item.ProductID,
 			&item.Name,
 			&item.Price,
@@ -159,6 +159,24 @@ func (r *CartRepository) DeleteItem(
 
 	if tag.RowsAffected() == 0 {
 		return errors.New("Item not found")
+	}
+	return nil
+}
+
+func (r *CartRepository) ClearCart(
+	ctx context.Context,
+	cartID int64,
+) error {
+	_, err := r.db.Exec(
+		ctx,
+		`
+		DELETE FROM cart_items
+		WHERE cart_id = $1
+		`,
+		cartID,
+	)
+	if err != nil {
+		return err
 	}
 	return nil
 }

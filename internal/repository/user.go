@@ -3,16 +3,14 @@ package repository
 import (
 	"context"
 	"techzone/internal/model"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepository struct {
-	db *pgxpool.Pool
+	db DBTX
 }
 
 func NewUserRepository(
-	db *pgxpool.Pool,
+	db DBTX,
 ) *UserRepository {
 	return &UserRepository{
 		db: db,

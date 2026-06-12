@@ -2,17 +2,17 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"log"
 	"techzone/internal/model"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ProductRepository struct {
-	db *pgxpool.Pool
+	db DBTX
 }
 
 func NewProductRepository(
-	db *pgxpool.Pool,
+	db DBTX,
 ) *ProductRepository {
 	return &ProductRepository{
 		db: db,
@@ -110,4 +110,34 @@ func (r *ProductRepository) GetAll(
 		return nil, err
 	}
 	return products, nil
+}
+
+func (r *ProductRepository) DecreaseStock(
+	ctx context.Context,
+	productID int64,
+	quantity int,
+) error {
+
+	tag, err := r.db.Exec(
+		ctx,
+		`
+		UPDATE products
+		SET stock = stock - $1
+		WHERE id = $2
+		AND stock >= $1
+		`,
+		quantity, productID,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		log.Printf(
+			"not enough stock product=%d quantity=%d",
+			productID,
+			quantity,
+		)
+		return errors.New("insufficient stock")
+	}
+	return nil
 }

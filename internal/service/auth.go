@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"strings"
 	"techzone/internal/model"
 	"techzone/internal/repository"
@@ -93,14 +94,27 @@ func (s *AuthService) Login(
 		input.Login,
 	)
 	if err != nil {
+		log.Printf(
+			"failed login for %s",
+			input.Login,
+		)
 		return nil, errors.New("invalid login or password")
+
 	}
 	err = bcrypt.CompareHashAndPassword(
 		[]byte(user.PasswordHash),
 		[]byte(input.Password),
 	)
 	if err != nil {
+		log.Printf(
+			"failed login for %s",
+			input.Login,
+		)
 		return nil, errors.New("invalid login or password")
 	}
+	log.Printf(
+		"user_id=%d login successful",
+		user.ID,
+	)
 	return user, nil
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"strings"
 	"techzone/internal/model"
 	"techzone/internal/repository"
@@ -46,6 +47,12 @@ func (s *ProductService) CreateProduct(
 		Price:       input.Price,
 		Stock:       input.Stock,
 	}
+
+	log.Printf(
+		"product created id=%d name=%s",
+		product.ID,
+		product.Name,
+	)
 	return s.productRepo.Create(
 		ctx,
 		product,

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"techzone/internal/model"
 	"techzone/internal/repository"
 
@@ -55,6 +56,12 @@ func (s *CartService) AddToCart(
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return err
 	}
+	log.Printf(
+		"user=%d added product=%d quantity=%d",
+		userID,
+		productID,
+		quantity,
+	)
 	return s.cartRepo.AddItem(
 		ctx,
 		cart.ID,
@@ -99,6 +106,12 @@ func (s *CartService) DeleteItem(
 	if err != nil {
 		return err
 	}
+
+	log.Printf(
+		"user=%d removed item=%d",
+		userID,
+		itemID,
+	)
 
 	return s.cartRepo.DeleteItem(
 		ctx,

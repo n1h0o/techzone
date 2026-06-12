@@ -30,6 +30,10 @@ func main() {
 	cartService := service.NewCartService(cartRepo)
 	cartHandler := handler.NewCartHandler(cartService)
 
+	orderRepo := repository.NewOrderRepository(db)
+	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, db)
+	orderHandler := handler.NewOrderHandler(orderService)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handler.GetHealth)
@@ -75,6 +79,32 @@ func main() {
 			http.HandlerFunc(
 				cartHandler.DeleteItem,
 			),
+		),
+	)
+
+	mux.Handle(
+		"POST /orders",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(orderHandler.CreateOrder),
+		),
+	)
+	mux.Handle(
+		"GET /orders",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(orderHandler.GetOrders),
+		),
+	)
+	mux.Handle(
+		"GET /orders/{id}",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(orderHandler.GetOrderByID),
+		),
+	)
+
+	mux.Handle(
+		"PATCH /orders/{id}/status",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(orderHandler.UpdateStatus),
 		),
 	)
 
