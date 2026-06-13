@@ -3,10 +3,10 @@ package model
 import "time"
 
 type Product struct {
-	ID          int64
-	Name        string
-	Description string
-	Price       int64
-	Stock       int
-	CreatedAt   time.Time
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Price       int64     `json:"price"`
+	Stock       int       `json:"stock"`
+	CreatedAt   time.Time `json:"created_at"`
 }
