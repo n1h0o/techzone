@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"techzone/internal/config"
 	"techzone/internal/handler"
 	"techzone/internal/middleware"
@@ -110,9 +111,14 @@ func main() {
 
 	handlerWithCors := middleware.CORSMiddleware(mux)
 
-	log.Println("server started on :8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-	if err := http.ListenAndServe(":8080", handlerWithCors); err != nil {
+	log.Printf("server started on :%s", port)
+
+	if err := http.ListenAndServe(":"+port, handlerWithCors); err != nil {
 		log.Fatal(err)
 	}
 }
