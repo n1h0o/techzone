@@ -14,7 +14,8 @@ func New() *pgxpool.Pool {
 
 	dbURL := os.Getenv("DB_URL")
 
-	log.Println("DB_URL =", dbURL)
+	log.Println("DB_URL =", os.Getenv("DB_URL"))
+	log.Println("DATABASE_URL =", os.Getenv("DATABASE_URL"))
 
 	pool, err := pgxpool.New(
 		context.Background(),
