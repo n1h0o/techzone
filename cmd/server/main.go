@@ -108,9 +108,11 @@ func main() {
 		),
 	)
 
+	handlerWithCors := middleware.CORSMiddleware(mux)
+
 	log.Println("server started on :8080")
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", handlerWithCors); err != nil {
 		log.Fatal(err)
 	}
 }

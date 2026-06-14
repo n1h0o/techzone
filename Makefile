@@ -23,3 +23,6 @@ migrate-up:
 
 migrate-down:
 	goose -dir migrations postgres "$(DB_URL)" down
+
+test:
+	go test ./...

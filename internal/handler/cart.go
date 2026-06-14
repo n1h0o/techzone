@@ -51,7 +51,7 @@ func (h *CartHandler) AddToCart(
 		req.Quantity,
 	)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -62,7 +62,7 @@ func (h *CartHandler) AddToCart(
 			"message": "product added to cart",
 		},
 	); err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -84,6 +84,10 @@ func (h *CartHandler) GetCart(
 	}
 
 	cart, err := h.cartService.GetCart(r.Context(), claims.UserID)
+
+	if cart == nil {
+		cart = []model.CartItemInfo{}
+	}
 	if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return

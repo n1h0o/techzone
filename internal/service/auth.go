@@ -6,18 +6,29 @@ import (
 	"log"
 	"strings"
 	"techzone/internal/model"
-	"techzone/internal/repository"
 
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserRepository interface {
+	GetByLogin(
+		ctx context.Context,
+		login string,
+	) (*model.User, error)
+
+	Create(
+		ctx context.Context,
+		user *model.User,
+	) (int64, error)
+}
+
 type AuthService struct {
-	userRepo *repository.UserRepository
+	userRepo UserRepository
 }
 
 func NewAuthService(
-	userRepo *repository.UserRepository,
+	userRepo UserRepository,
 ) *AuthService {
 	return &AuthService{
 		userRepo: userRepo,
