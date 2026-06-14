@@ -26,3 +26,7 @@ migrate-down:
 
 test:
 	go test ./...
+
+turn-on:
+	docker compose up -d --build
+	cd frontend && npm run dev
