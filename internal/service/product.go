@@ -6,15 +6,36 @@ import (
 	"log"
 	"strings"
 	"techzone/internal/model"
-	"techzone/internal/repository"
 )
 
+type ProductRepository interface {
+	Create(
+		ctx context.Context,
+		product *model.Product,
+	) (int64, error)
+
+	GetByID(
+		ctx context.Context,
+		id int64,
+	) (*model.Product, error)
+
+	GetAll(
+		ctx context.Context,
+	) ([]model.Product, error)
+
+	DecreaseStock(
+		ctx context.Context,
+		productID int64,
+		quantity int,
+	) error
+}
+
 type ProductService struct {
-	productRepo *repository.ProductRepository
+	productRepo ProductRepository
 }
 
 func NewProductService(
-	productRepo *repository.ProductRepository,
+	productRepo ProductRepository,
 ) *ProductService {
 	return &ProductService{
 		productRepo: productRepo,

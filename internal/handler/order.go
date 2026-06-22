@@ -12,14 +12,17 @@ import (
 )
 
 type OrderHandler struct {
-	orderService *service.OrderService
+	orderService     *service.OrderService
+	notificationPool *service.NotificationWorkerPool
 }
 
 func NewOrderHandler(
 	orderService *service.OrderService,
+	pool *service.NotificationWorkerPool,
 ) *OrderHandler {
 	return &OrderHandler{
-		orderService: orderService,
+		orderService:     orderService,
+		notificationPool: pool,
 	}
 }
 
@@ -43,6 +46,14 @@ func (h *OrderHandler) CreateOrder(
 		r.Context(),
 		claims.UserID,
 	)
+
+	h.notificationPool.Submit(
+		service.NotificationJob{
+			OrderID: orderID,
+			UserID:  claims.UserID,
+		},
+	)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

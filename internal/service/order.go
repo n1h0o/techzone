@@ -10,17 +10,51 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type OrderRepository interface {
+	Create(
+		ctx context.Context,
+		order *model.Order,
+	) (int64, error)
+
+	CreateItem(
+		ctx context.Context,
+		item *model.OrderItem,
+	) error
+
+	GetByUserID(
+		ctx context.Context,
+		userID int64,
+	) ([]model.OrderInfo, error)
+
+	GetByID(
+		ctx context.Context,
+		orderID int64,
+		userID int64,
+	) (*model.Order, error)
+
+	GetItems(
+		ctx context.Context,
+		orderID int64,
+	) ([]model.OrderItemInfo, error)
+
+	UpdateStatus(
+		ctx context.Context,
+		orderID int64,
+		status string,
+	) error
+}
+
 type OrderService struct {
-	orderRepo   *repository.OrderRepository
-	cartRepo    *repository.CartRepository
-	productRepo *repository.ProductRepository
+	orderRepo   OrderRepository
+	cartRepo    CartRepository
+	productRepo ProductRepository
 	db          *pgxpool.Pool
 }
 
 func NewOrderService(
-	orderRepo *repository.OrderRepository,
-	cartRepo *repository.CartRepository,
-	productRepo *repository.ProductRepository,
+	orderRepo OrderRepository,
+	cartRepo CartRepository,
+	productRepo ProductRepository,
 	db *pgxpool.Pool,
 ) *OrderService {
 	return &OrderService{

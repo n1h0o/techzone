@@ -5,17 +5,45 @@ import (
 	"errors"
 	"log"
 	"techzone/internal/model"
-	"techzone/internal/repository"
 
 	"github.com/jackc/pgx/v5"
 )
 
+type CartRepository interface {
+	AddItem(
+		ctx context.Context,
+		CartID int64,
+		ProductID int64,
+		Quantity int,
+	) error
+	GetCart(
+		ctx context.Context,
+		cartID int64,
+	) ([]model.CartItemInfo, error)
+
+	GetByUserID(
+		ctx context.Context,
+		userID int64,
+	) (*model.Cart, error)
+
+	Create(
+		ctx context.Context,
+		userID int64,
+	) (int64, error)
+
+	DeleteItem(
+		ctx context.Context,
+		itemID int64,
+		cartID int64,
+	) error
+}
+
 type CartService struct {
-	cartRepo *repository.CartRepository
+	cartRepo CartRepository
 }
 
 func NewCartService(
-	cartRepo *repository.CartRepository,
+	cartRepo CartRepository,
 ) *CartService {
 	return &CartService{
 		cartRepo: cartRepo,

@@ -33,7 +33,20 @@ func main() {
 
 	orderRepo := repository.NewOrderRepository(db)
 	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, db)
-	orderHandler := handler.NewOrderHandler(orderService)
+	notificationRepo := repository.NewNotificationRepository(
+		db,
+	)
+	notificationService := service.NewNotificationService(
+		notificationRepo,
+	)
+	notificationPool := service.NewNotificationWorkerPool(
+		5,
+		notificationRepo,
+	)
+	notificationHandler := handler.NewNotificationHandler(
+		notificationService,
+	)
+	orderHandler := handler.NewOrderHandler(orderService, notificationPool)
 
 	mux := http.NewServeMux()
 
@@ -106,6 +119,15 @@ func main() {
 		"PATCH /orders/{id}/status",
 		middleware.AuthMiddleware(cfg)(
 			http.HandlerFunc(orderHandler.UpdateStatus),
+		),
+	)
+
+	mux.Handle(
+		"GET /notificcations",
+		middleware.AuthMiddleware(cfg)(
+			http.HandlerFunc(
+				notificationHandler.GetNotifications,
+			),
 		),
 	)
 
