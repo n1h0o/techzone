@@ -41,7 +41,7 @@ func main() {
 	)
 	notificationPool := service.NewNotificationWorkerPool(
 		5,
-		notificationRepo,
+		notificationService,
 	)
 	notificationHandler := handler.NewNotificationHandler(
 		notificationService,
@@ -123,7 +123,7 @@ func main() {
 	)
 
 	mux.Handle(
-		"GET /notificcations",
+		"GET /notifications",
 		middleware.AuthMiddleware(cfg)(
 			http.HandlerFunc(
 				notificationHandler.GetNotifications,

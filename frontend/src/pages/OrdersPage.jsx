@@ -4,6 +4,8 @@ import api from "../api/api";
 function OrdersPage() {
   const [orders, setOrders] = useState([]);
 
+  const role = localStorage.getItem("role");
+
   useEffect(() => {
     loadOrders();
   }, []);
@@ -23,12 +25,9 @@ function OrdersPage() {
     }
 
     try {
-      await api.patch(
-        `/orders/${orderId}/status`,
-        {
-          status: status,
-        }
-      );
+      await api.patch(`/orders/${orderId}/status`, {
+        status,
+      });
 
       alert("Статус обновлён");
 
@@ -39,30 +38,39 @@ function OrdersPage() {
     }
   }
 
+  function getStatus(status) {
+    switch (status) {
+      case "new":
+        return "Новый";
+      case "processing":
+        return "В обработке";
+      case "completed":
+        return "Завершён";
+      default:
+        return status;
+    }
+  }
+
   return (
-    <div>
+    <div className="page">
       <h1>Мои заказы</h1>
 
       {orders.length === 0 ? (
-        <p>Заказов пока нет</p>
+        <p>Заказов пока нет.</p>
       ) : (
         orders.map((order) => (
           <div
             key={order.id}
-            style={{
-              border: "1px solid gray",
-              marginBottom: "10px",
-              padding: "10px",
-              borderRadius: "8px",
-            }}
+            className="card"
           >
             <p>
-              <strong>ID:</strong> {order.id}
+              <strong>Заказ №</strong>
+              {order.id}
             </p>
 
             <p>
               <strong>Статус:</strong>{" "}
-              {order.status}
+              {getStatus(order.status)}
             </p>
 
             <p>
@@ -70,35 +78,49 @@ function OrdersPage() {
               {order.total_price} ₽
             </p>
 
-            <select
-              defaultValue=""
-              onChange={(e) =>
-                updateStatus(
-                  order.id,
-                  e.target.value
-                )
-              }
-            >
-              <option value="">
-                Изменить статус
-              </option>
+            {role === "admin" && (
+              <>
+                {order.status === "new" && (
+                  <select
+                    defaultValue=""
+                    onChange={(e) =>
+                      updateStatus(
+                        order.id,
+                        e.target.value
+                      )
+                    }
+                  >
+                    <option value="">
+                      Изменить статус
+                    </option>
 
-              <option value="new">
-                New
-              </option>
+                    <option value="processing">
+                      В обработке
+                    </option>
+                  </select>
+                )}
 
-              <option value="processing">
-                Processing
-              </option>
+                {order.status === "processing" && (
+                  <select
+                    defaultValue=""
+                    onChange={(e) =>
+                      updateStatus(
+                        order.id,
+                        e.target.value
+                      )
+                    }
+                  >
+                    <option value="">
+                      Изменить статус
+                    </option>
 
-              <option value="completed">
-                Completed
-              </option>
-
-              <option value="cancelled">
-                Cancelled
-              </option>
-            </select>
+                    <option value="completed">
+                      Завершён
+                    </option>
+                  </select>
+                )}
+              </>
+            )}
           </div>
         ))
       )}

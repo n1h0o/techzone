@@ -47,17 +47,17 @@ func (h *OrderHandler) CreateOrder(
 		claims.UserID,
 	)
 
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	h.notificationPool.Submit(
 		service.NotificationJob{
 			OrderID: orderID,
 			UserID:  claims.UserID,
 		},
 	)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 
 	w.Header().Set("Content-Type", "application/json")
 

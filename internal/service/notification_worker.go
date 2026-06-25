@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"log"
-	"techzone/internal/repository"
 )
 
 type NotificationJob struct {
@@ -19,11 +18,12 @@ type NotificationWorkerPool struct {
 
 func NewNotificationWorkerPool(
 	workers int,
-	repo *repository.NotificationRepository,
+	service *NotificationService,
 ) *NotificationWorkerPool {
 
 	pool := &NotificationWorkerPool{
-		jobs: make(chan NotificationJob, 100),
+		jobs:             make(chan NotificationJob, 100),
+		notificationRepo: service,
 	}
 
 	for i := 0; i < workers; i++ {

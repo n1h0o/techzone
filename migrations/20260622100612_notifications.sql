@@ -1,5 +1,4 @@
 -- +goose Up
-
 CREATE TABLE notifications (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -9,5 +8,4 @@ CREATE TABLE notifications (
 );
 
 -- +goose Down
-
 DROP TABLE notifications;

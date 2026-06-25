@@ -43,7 +43,7 @@ func (r *NotificationRepository) Create(
 
 func (r *NotificationRepository) GetNotifications(
 	ctx context.Context,
-	userId int64,
+	userID int64,
 ) ([]model.Notification, error) {
 
 	rows, err := r.db.Query(
@@ -59,6 +59,7 @@ func (r *NotificationRepository) GetNotifications(
 		WHERE user_id = $1
 		ORDER BY created_at DESC
 		`,
+		userID,
 	)
 	if err != nil {
 		return nil, err
@@ -66,7 +67,7 @@ func (r *NotificationRepository) GetNotifications(
 
 	defer rows.Close()
 
-	var notifications []model.Notification
+	notifications := make([]model.Notification, 0)
 
 	for rows.Next() {
 		var notification model.Notification

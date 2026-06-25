@@ -3,9 +3,9 @@ package model
 import "time"
 
 type Notification struct {
-	ID        int64
-	UserID    int64
-	OrderID   int64
-	Message   string
-	CreatedAt time.Time
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	OrderID   int64     `json:"order_id"`
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"created_at"`
 }
