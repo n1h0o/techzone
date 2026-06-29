@@ -8,49 +8,49 @@ function Navbar() {
 
   function handleLogout() {
     logout();
-    navigate("/login");
+    navigate("/");
   }
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        gap: "20px",
-        padding: "20px",
-        alignItems: "center",
-      }}
-    >
-      <Link to="/products">Товары</Link>
-
-      {user && (
-        <>
-          <Link to="/cart">Корзина</Link>
-
-          <Link to="/orders">Заказы</Link>
-
-          <Link to="/notifications">
-            Уведомления
-          </Link>
-        </>
-      )}
-
-      {user?.role === "admin" && (
-        <Link to="/admin/products">
-          Добавить товар
+    <header className="navbar">
+      <div className="navbar-left">
+        <Link className="logo" to="/">
+          TechZone
         </Link>
-      )}
 
-      <div
-        style={{
-          marginLeft: "auto",
-          display: "flex",
-          gap: "15px",
-          alignItems: "center",
-        }}
-      >
+        <Link to="/products">
+          Каталог
+        </Link>
+
+        {user && (
+          <>
+            <Link to="/cart">
+              Корзина
+            </Link>
+
+            <Link to="/orders">
+              Заказы
+            </Link>
+
+            <Link to="/notifications">
+              Уведомления
+            </Link>
+          </>
+        )}
+
+        {user?.role === "admin" && (
+          <Link to="/admin">
+            Админ-панель
+          </Link>
+        )}
+      </div>
+
+      <div className="navbar-right">
         {!user ? (
           <>
-            <Link to="/login">Вход</Link>
+            <Link to="/login">
+              Вход
+            </Link>
 
             <Link to="/register">
               Регистрация
@@ -58,7 +58,7 @@ function Navbar() {
           </>
         ) : (
           <>
-            <span>
+            <span className="username">
               👤 {user.login}
             </span>
 
@@ -66,13 +66,16 @@ function Navbar() {
               Профиль
             </Link>
 
-            <button onClick={handleLogout}>
+            <button
+              className="logout-btn"
+              onClick={handleLogout}
+            >
               Выйти
             </button>
           </>
         )}
       </div>
-    </nav>
+    </header>
   );
 }
 

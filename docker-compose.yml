@@ -12,17 +12,41 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d study"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: techzone-redis
+    restart: always
+    ports:
+    - "6379:6379"
+    volumes:
+    - redis_data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
     build: .
-
+    container_name: techzone-app
     depends_on:
       - postgres
+      - redis
 
     ports:
       - "8080:8080"
 
     environment:
-      DB_URL: "postgres://postgres:1234@postgres:5432/study"
+      DB_URL: postgres://postgres:1234@postgres:5432/study?sslmode=disable
+      REDIS_ADDR: redis:6379
 
 volumes:
   postgres_data:
+  redis_data:

@@ -13,9 +13,13 @@ import CartPage from "./pages/CartPage";
 import OrdersPage from "./pages/OrdersPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
-
-// позже создадим
+import PrivateRoute from "./components/PrivateRoute";
+import AdminRoute from "./components/AdminRoute";
+import AdminPage from "./pages/AdminPage";
+import AdminLayout from "./components/AdminLayout";
 import AdminProductsPage from "./pages/AdminProductsPage";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOrdersPage from "./pages/AdminOrdersPage";
 
 function App() {
   return (
@@ -45,27 +49,71 @@ function App() {
 
         <Route
           path="/cart"
-          element={<CartPage />}
+          element={
+          <PrivateRoute>
+            <CartPage />
+          </PrivateRoute>
+        }
         />
 
         <Route
           path="/orders"
-          element={<OrdersPage />}
+          element={
+            <PrivateRoute>
+              <OrdersPage />
+            </PrivateRoute>
+        }
         />
 
         <Route
           path="/notifications"
-          element={<NotificationsPage />}
+          element={
+          <PrivateRoute>
+            <NotificationsPage />
+          </PrivateRoute>
+        }
         />
 
         <Route
-          path="/profile"
-          element={<ProfilePage />}
+        path="/profile"
+        element={
+        <PrivateRoute>
+          <ProfilePage />
+        </PrivateRoute>
+        }
         />
+
+        <Route
+    path="/admin"
+    element={
+        <AdminRoute>
+            <AdminLayout />
+        </AdminRoute>
+    }
+>
+    <Route
+        index
+        element={<AdminDashboard />}
+    />
+
+    <Route
+        path="products"
+        element={<AdminProductsPage />}
+    />
+
+    <Route
+        path="orders"
+        element={<AdminOrdersPage />}
+    />
+        </Route>
 
         <Route
           path="/admin/products"
-          element={<AdminProductsPage />}
+          element={
+          <AdminRoute>
+            <AdminProductsPage />
+          </AdminRoute>
+        }
         />
       </Routes>
     </BrowserRouter>

@@ -5,4 +5,5 @@ type CreateProductInput struct {
 	Description string `json:"description"`
 	Price       int64  `json:"price"`
 	Stock       int    `json:"stock"`
+	ImageURL    string `json:"image_url"`
 }

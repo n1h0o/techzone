@@ -10,12 +10,18 @@ import (
 	"techzone/internal/repository"
 	"techzone/internal/service"
 	"techzone/pkg/postgres"
+	"techzone/pkg/redis"
 )
 
 func main() {
 	cfg := config.Load()
 	db := postgres.New()
+	redisClient, err := redis.New()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer db.Close()
+	defer redisClient.Close()
 
 	userRepo := repository.NewUserRepository(db)
 
@@ -24,7 +30,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService, cfg)
 
 	productRepo := repository.NewProductRepository(db)
-	productService := service.NewProductService(productRepo)
+	productService := service.NewProductService(productRepo, redisClient)
 	productHandler := handler.NewProductHandler(productService)
 
 	cartRepo := repository.NewCartRepository(db)
@@ -63,6 +69,16 @@ func main() {
 	)
 	mux.HandleFunc("GET /products", productHandler.GetProducts)
 	mux.Handle(
+		"GET /admin/products",
+		middleware.AuthMiddleware(cfg)(
+			middleware.AdminMiddleware(
+				http.HandlerFunc(
+					productHandler.GetProductsForAdmin,
+				),
+			),
+		),
+	)
+	mux.Handle(
 		"POST /products",
 		middleware.AuthMiddleware(cfg)(
 			middleware.AdminMiddleware(
@@ -72,6 +88,23 @@ func main() {
 			),
 		),
 	)
+	mux.Handle(
+		"PUT /products/{id}",
+		middleware.AuthMiddleware(cfg)(
+			middleware.AdminMiddleware(
+				http.HandlerFunc(productHandler.UpdateProduct),
+			),
+		),
+	)
+	mux.Handle(
+		"PATCH /products/{id}/status",
+		middleware.AuthMiddleware(cfg)(
+			middleware.AdminMiddleware(
+				http.HandlerFunc(productHandler.SetProductStatus),
+			),
+		),
+	)
+
 	mux.HandleFunc("GET /products/{id}", productHandler.GetProduct)
 	mux.Handle(
 		"POST /cart/items",
