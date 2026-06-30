@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"techzone/internal/middleware"
 	"techzone/internal/repository"
 	"techzone/internal/service"
+	"techzone/pkg/kafka"
 	"techzone/pkg/postgres"
 	"techzone/pkg/redis"
 )
@@ -16,12 +18,25 @@ import (
 func main() {
 	cfg := config.Load()
 	db := postgres.New()
+
 	redisClient, err := redis.New()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	producerClient, err := kafka.NewProducerClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	consumerClient, err := kafka.NewConsumerClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	defer db.Close()
 	defer redisClient.Close()
+	defer producerClient.Close()
+	defer consumerClient.Close()
 
 	userRepo := repository.NewUserRepository(db)
 
@@ -38,7 +53,6 @@ func main() {
 	cartHandler := handler.NewCartHandler(cartService)
 
 	orderRepo := repository.NewOrderRepository(db)
-	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, db)
 	notificationRepo := repository.NewNotificationRepository(
 		db,
 	)
@@ -52,6 +66,12 @@ func main() {
 	notificationHandler := handler.NewNotificationHandler(
 		notificationService,
 	)
+
+	producer := kafka.NewProducer(producerClient)
+	consumer := kafka.NewConsumer(consumerClient, notificationPool)
+	go consumer.Start(context.Background())
+
+	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, producer, db)
 	orderHandler := handler.NewOrderHandler(orderService, notificationPool)
 
 	mux := http.NewServeMux()

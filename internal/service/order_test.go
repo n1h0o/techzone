@@ -80,6 +80,7 @@ func TestUpdateStatus_NewToProcessing(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 
 	err := service.UpdateStatus(
@@ -110,6 +111,7 @@ func TestUpdateStatus_NewToCompleted(t *testing.T) {
 
 	service := NewOrderService(
 		repo,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -146,6 +148,7 @@ func TestUpdateStatus_ProcessingToCompleted(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 
 	err := service.UpdateStatus(
@@ -177,6 +180,7 @@ func TestUpdateStatus_CompletedOrder(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 
 	err := service.UpdateStatus(
@@ -204,6 +208,7 @@ func TestUpdateStatus_InvalidStatus(t *testing.T) {
 
 	service := NewOrderService(
 		repo,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -238,6 +243,7 @@ func TestGetOrders_Success(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 
 	orders, err := service.GetOrders(
@@ -262,6 +268,7 @@ func TestGetOrders_Error(t *testing.T) {
 
 	service := NewOrderService(
 		repo,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -292,6 +299,7 @@ func TestGetOrder_Success(t *testing.T) {
 
 	service := NewOrderService(
 		repo,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -327,6 +335,7 @@ func TestGetOrder_GetBByIDError(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 
 	_, err := service.GetOrder(
@@ -351,6 +360,7 @@ func TestGetOrders_GetItemsError(t *testing.T) {
 
 	service := NewOrderService(
 		repo,
+		nil,
 		nil,
 		nil,
 		nil,

@@ -32,13 +32,48 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.1.2
+
+    container_name: techzone-redpanda
+
+    command:
+    - redpanda
+    - start
+    - --overprovisioned
+    - --smp=1
+    - --memory=1G
+    - --reserve-memory=0M
+    - --node-id=0
+    - --check=false
+    - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+    - --advertise-kafka-addr=PLAINTEXT://redpanda:9092
+
+    ports:
+      - "9092:9092"
+
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   app:
     build: .
     container_name: techzone-app
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      
+      redis:
+        condition: service_healthy
+
+      redpanda:
+        condition: service_healthy
 
     ports:
       - "8080:8080"
@@ -46,7 +81,9 @@ services:
     environment:
       DB_URL: postgres://postgres:1234@postgres:5432/study?sslmode=disable
       REDIS_ADDR: redis:6379
+      KAFKA_BROKERS: redpanda:9092
 
 volumes:
   postgres_data:
   redis_data:
+  redpanda_data:

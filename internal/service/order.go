@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"techzone/internal/event"
 	"techzone/internal/model"
 	"techzone/internal/repository"
 
@@ -48,6 +49,7 @@ type OrderService struct {
 	orderRepo   OrderRepository
 	cartRepo    CartRepository
 	productRepo ProductRepository
+	publisher   EventPublisher
 	db          *pgxpool.Pool
 }
 
@@ -55,12 +57,14 @@ func NewOrderService(
 	orderRepo OrderRepository,
 	cartRepo CartRepository,
 	productRepo ProductRepository,
+	publisher EventPublisher,
 	db *pgxpool.Pool,
 ) *OrderService {
 	return &OrderService{
 		orderRepo:   orderRepo,
 		cartRepo:    cartRepo,
 		productRepo: productRepo,
+		publisher:   publisher,
 		db:          db,
 	}
 }
@@ -156,6 +160,19 @@ func (s *OrderService) CreateOrder(
 
 	if err := tx.Commit(ctx); err != nil {
 		return 0, err
+	}
+	err = s.publisher.PublishOrderCreated(
+		ctx,
+		event.OrderCreatedEvent{
+			OrderID: orderID,
+			UserID:  userID,
+		},
+	)
+	if err != nil {
+		log.Printf(
+			"failed to publish order.created event: %v",
+			err,
+		)
 	}
 	log.Printf(
 		"order created id=%d user=%d total=%.2f",
