@@ -12,9 +12,7 @@ import (
 var db *pgxpool.Pool
 
 func TestMain(m *testing.M) {
-	if err := godotenv.Load("../../../.env"); err != nil {
-		panic(err)
-	}
+	_ = godotenv.Load("../../../.env")
 
 	var err error
 
