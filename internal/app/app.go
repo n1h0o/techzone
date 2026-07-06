@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"techzone/internal/config"
 	"techzone/internal/event"
 	"techzone/internal/handler"
@@ -97,7 +98,7 @@ func NewServer(testMode bool) *App {
 
 	gateway := payment.NewMockGateway()
 
-	if testMode {
+	if testMode || os.Getenv("KAFKA_BROKERS") == "" {
 
 		producer = MockPublisher{}
 
