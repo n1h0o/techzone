@@ -3,7 +3,43 @@ package integration
 import (
 	"context"
 	"testing"
+
+	"golang.org/x/crypto/bcrypt"
 )
+
+func createAdmin(t *testing.T) {
+	t.Helper()
+
+	hash, err := bcrypt.GenerateFromPassword(
+		[]byte("123456"),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = db.Exec(
+		context.Background(),
+		`
+		INSERT INTO users(
+			login,
+			email,
+			password_hash,
+			role
+		)
+		VALUES ($1,$2,$3,$4)
+		ON CONFLICT (login) DO NOTHING
+		`,
+		"admin",
+		"admin@mail.ru",
+		string(hash),
+		"admin",
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 
 func paymentCount(
 	t *testing.T,
@@ -37,10 +73,15 @@ func cleanDatabase(t *testing.T) {
 	_, err := db.Exec(
 		context.Background(),
 		`
-		TRUNCATE notifications,
-		         payments,
-		         orders,
-		         carts
+		TRUNCATE
+    		notifications,
+   			payments,
+    		order_items,
+    		orders,
+    		cart_items,
+    		carts,
+    		products,
+    		users
 		RESTART IDENTITY CASCADE;
 		`,
 	)

@@ -291,6 +291,7 @@ func createProduct(
 func TestPaymentIdempotency(t *testing.T) {
 
 	cleanDatabase(t)
+	createAdmin(t)
 
 	server := httptest.NewServer(
 		app.NewServer(true).Handler(),
