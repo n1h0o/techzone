@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"log"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -11,6 +12,7 @@ func New() (*redis.Client, error) {
 	var client *redis.Client
 
 	if url := os.Getenv("REDIS_URL"); url != "" {
+		log.Println("REDIS_URL =", os.Getenv("REDIS_URL"))
 		opt, err := redis.ParseURL(url)
 		if err != nil {
 			return nil, err
