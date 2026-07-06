@@ -8,13 +8,24 @@ import (
 )
 
 func New() (*redis.Client, error) {
-	host := os.Getenv("REDIS_HOST")
-	port := os.Getenv("REDIS_PORT")
+	var client *redis.Client
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     host + ":" + port,
-		Password: os.Getenv("REDIS_PASSWORD"),
-	})
+	if url := os.Getenv("REDIS_URL"); url != "" {
+		opt, err := redis.ParseURL(url)
+		if err != nil {
+			return nil, err
+		}
+		client = redis.NewClient(opt)
+	} else {
+		addr := os.Getenv("REDIS_ADDR")
+		if addr == "" {
+			addr = "localhost:6379"
+		}
+
+		client = redis.NewClient(&redis.Options{
+			Addr: addr,
+		})
+	}
 
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, err
