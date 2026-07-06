@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// Notification представляет уведомление пользователя
 type Notification struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`

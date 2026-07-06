@@ -21,9 +21,10 @@ func NewConsumerClient() (*kgo.Client, error) {
 		),
 		kgo.ConsumeTopics(
 			"order.created",
+			"payment.completed",
 		),
 		kgo.ConsumerGroup(
-			"techzone-notificatios",
+			"techzone-notifications",
 		),
 	)
 }

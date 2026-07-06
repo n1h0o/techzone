@@ -20,6 +20,14 @@ func NewProductHandler(
 	}
 }
 
+// GetProducts godoc
+//
+// @Summary Получить список товаров
+// @Description Возвращает список активных товаров
+// @Tags products
+// @Produce json
+// @Success 200 {array} model.Product
+// @Router /products [get]
 func (h *ProductHandler) GetProducts(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -42,6 +50,18 @@ func (h *ProductHandler) GetProducts(
 	}
 }
 
+// GetProductsForAdmin godoc
+//
+// @Summary Получить список всех товаров
+// @Description Возвращает полный список товаров, включая неактивные. Доступно только администраторам.
+// @Tags products
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} model.Product
+// @Failure 401 {string} string
+// @Failure 403 {string} string
+// @Failure 500 {string} string
+// @Router /admin/products [get]
 func (h *ProductHandler) GetProductsForAdmin(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -64,6 +84,19 @@ func (h *ProductHandler) GetProductsForAdmin(
 	}
 }
 
+// CreateProduct godoc
+//
+// @Summary Создать товар
+// @Description Создает новый товар
+// @Tags products
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body service.CreateProductInput true "Данные товара"
+// @Success 201 {object} handler.MessageResponse
+// @Failure 400 {string} string
+// @Failure 401 {string} string
+// @Router /products [post]
 func (h *ProductHandler) CreateProduct(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -91,8 +124,8 @@ func (h *ProductHandler) CreateProduct(
 	w.WriteHeader(http.StatusCreated)
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]int64{
-			"id": productID,
+		ProductResponse{
+			ID: productID,
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -100,6 +133,16 @@ func (h *ProductHandler) CreateProduct(
 	}
 }
 
+// GetProduct godoc
+//
+// @Summary Получить товар
+// @Description Возвращает товар по ID
+// @Tags products
+// @Produce json
+// @Param id path int true "ID товара"
+// @Success 200 {object} model.Product
+// @Failure 404 {string} string
+// @Router /products/{id} [get]
 func (h *ProductHandler) GetProduct(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -141,6 +184,19 @@ func (h *ProductHandler) GetProduct(
 
 }
 
+// UpdateProduct godoc
+//
+// @Summary Обновить товар
+// @Description Полностью обновляет товар
+// @Tags products
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "ID товара"
+// @Param request body service.CreateProductInput true "Новые данные"
+// @Success 200 {object} handler.MessageResponse
+// @Failure 400 {string} string
+// @Router /products/{id} [put]
 func (h *ProductHandler) UpdateProduct(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -182,8 +238,8 @@ func (h *ProductHandler) UpdateProduct(
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]string{
-			"message": "product was updated",
+		MessageResponse{
+			Message: "product was updated",
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -191,10 +247,19 @@ func (h *ProductHandler) UpdateProduct(
 	}
 }
 
-type ProductStatusRequest struct {
-	IsActive bool `json:"is_active"`
-}
-
+// SetProductStatus godoc
+//
+// @Summary Изменить статус товара
+// @Description Активирует или деактивирует товар
+// @Tags products
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "ID товара"
+// @Param request body handler.ProductStatusInput true "Статус товара"
+// @Success 200 {object} handler.MessageResponse
+// @Failure 400 {string} string
+// @Router /products/{id}/status [patch]
 func (h *ProductHandler) SetProductStatus(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -217,7 +282,7 @@ func (h *ProductHandler) SetProductStatus(
 		return
 	}
 
-	var req ProductStatusRequest
+	var req ProductStatusInput
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid body", http.StatusBadRequest)
@@ -236,9 +301,10 @@ func (h *ProductHandler) SetProductStatus(
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(map[string]string{
-		"message": "status updated",
-	},
+	if err := json.NewEncoder(w).Encode(
+		MessageResponse{
+			Message: "status updated",
+		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return

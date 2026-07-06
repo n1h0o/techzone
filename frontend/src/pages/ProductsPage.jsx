@@ -8,14 +8,18 @@ function ProductsPage() {
     loadProducts();
   }, []);
 
-  async function loadProducts() {
-    try {
-      const res = await api.get("/products");
-      setProducts(res.data);
-    } catch (err) {
-      console.error(err);
-    }
+ async function loadProducts() {
+  try {
+    const res = await api.get("/products");
+
+    console.log("Ответ сервера:", res.data);
+    console.log("Это массив?", Array.isArray(res.data));
+
+    setProducts(res.data);
+  } catch (err) {
+    console.error(err);
   }
+}
 
   async function addToCart(productId) {
     const token = localStorage.getItem("token");

@@ -40,3 +40,24 @@ func (p *Producer) PublishOrderCreated(
 		record,
 	).FirstErr()
 }
+
+func (p *Producer) PublishPaymentCompleted(
+	ctx context.Context,
+	event event.PaymentCompletedEvent,
+) error {
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	record := &kgo.Record{
+		Topic: "payment.completed",
+		Value: data,
+	}
+
+	return p.client.ProduceSync(
+		ctx,
+		record,
+	).FirstErr()
+}

@@ -6,26 +6,33 @@ import (
 	"net/http"
 	"strconv"
 	"techzone/internal/middleware"
-	"techzone/internal/model"
 	"techzone/internal/service"
 	"techzone/pkg/jwt"
 )
 
 type OrderHandler struct {
-	orderService     *service.OrderService
-	notificationPool *service.NotificationWorkerPool
+	orderService *service.OrderService
 }
 
 func NewOrderHandler(
 	orderService *service.OrderService,
-	pool *service.NotificationWorkerPool,
 ) *OrderHandler {
 	return &OrderHandler{
-		orderService:     orderService,
-		notificationPool: pool,
+		orderService: orderService,
 	}
 }
 
+// CreateOrder godoc
+//
+// @Summary Создать заказ
+// @Description Создает заказ из текущей корзины пользователя
+// @Tags orders
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} handler.OrderCreateResponse
+// @Failure 400 {string} string
+// @Failure 401 {string} string
+// @Router /orders [post]
 func (h *OrderHandler) CreateOrder(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -52,18 +59,11 @@ func (h *OrderHandler) CreateOrder(
 		return
 	}
 
-	h.notificationPool.Submit(
-		service.NotificationJob{
-			OrderID: orderID,
-			UserID:  claims.UserID,
-		},
-	)
-
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]int64{
-			"order_id": orderID,
+		OrderCreateResponse{
+			OrderID: orderID,
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -71,6 +71,16 @@ func (h *OrderHandler) CreateOrder(
 	}
 }
 
+// GetOrders godoc
+//
+// @Summary Получить список заказов
+// @Description Возвращает все заказы текущего пользователя
+// @Tags orders
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} handler.OrdersResponse
+// @Failure 401 {string} string
+// @Router /orders [get]
 func (h *OrderHandler) GetOrders(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -97,8 +107,8 @@ func (h *OrderHandler) GetOrders(
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string][]model.OrderInfo{
-			"orders": orders,
+		OrdersResponse{
+			Orders: orders,
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -106,6 +116,19 @@ func (h *OrderHandler) GetOrders(
 	}
 }
 
+// GetOrderByID godoc
+//
+// @Summary Получить заказ
+// @Description Возвращает заказ вместе с товарами
+// @Tags orders
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "ID заказа"
+// @Success 200 {object} service.OrderDetails
+// @Failure 400 {string} string
+// @Failure 401 {string} string
+// @Failure 404 {string} string
+// @Router /orders/{id} [get]
 func (h *OrderHandler) GetOrderByID(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -152,10 +175,21 @@ func (h *OrderHandler) GetOrderByID(
 	}
 }
 
-type UpdateStatusRequest struct {
-	Status string `json:"status"`
-}
-
+// UpdateStatus godoc
+//
+// @Summary Обновить статус заказа
+// @Description Изменяет статус заказа (только для администратора)
+// @Tags orders
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "ID заказа"
+// @Param request body handler.UpdateStatusRequest true "Новый статус"
+// @Success 200 {object} handler.MessageResponse
+// @Failure 400 {string} string
+// @Failure 401 {string} string
+// @Failure 403 {string} string
+// @Router /orders/{id}/status [patch]
 func (h *OrderHandler) UpdateStatus(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -210,8 +244,8 @@ func (h *OrderHandler) UpdateStatus(
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]string{
-			"message": "status updated",
+		MessageResponse{
+			Message: "status updated",
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusBadRequest)

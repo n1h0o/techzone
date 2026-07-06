@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+
 import api from "../api/api";
+import { pay } from "../api/payment";
 
 function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -38,6 +41,26 @@ function OrdersPage() {
     }
   }
 
+  async function payOrder(orderId) {
+    try {
+      const idempotencyKey = uuidv4();
+
+      await pay(orderId, idempotencyKey);
+
+      alert("Оплата прошла успешно");
+
+      loadOrders();
+    } catch (err) {
+      console.error(err);
+
+      if (err.response?.data) {
+        alert(err.response.data);
+      } else {
+        alert("Ошибка оплаты");
+      }
+    }
+  }
+
   function getStatus(status) {
     switch (status) {
       case "new":
@@ -51,6 +74,19 @@ function OrdersPage() {
     }
   }
 
+  function getPaymentStatus(status) {
+    switch (status) {
+      case "success":
+        return "✅ Оплачено";
+      case "pending":
+        return "🟡 В обработке";
+      case "failed":
+        return "❌ Ошибка";
+      default:
+        return "⚪ Не оплачено";
+    }
+  }
+
   return (
     <div className="page">
       <h1>Мои заказы</h1>
@@ -59,24 +95,34 @@ function OrdersPage() {
         <p>Заказов пока нет.</p>
       ) : (
         orders.map((order) => (
-          <div
-            key={order.id}
-            className="card"
-          >
+          <div key={order.id} className="card">
             <p>
-              <strong>Заказ №</strong>
-              {order.id}
+              <strong>Заказ №</strong> {order.id}
             </p>
 
             <p>
-              <strong>Статус:</strong>{" "}
+              <strong>Статус заказа:</strong>{" "}
               {getStatus(order.status)}
+            </p>
+
+            <p>
+              <strong>Оплата:</strong>{" "}
+              {getPaymentStatus(order.payment_status)}
             </p>
 
             <p>
               <strong>Сумма:</strong>{" "}
               {order.total_price} ₽
             </p>
+
+            {role !== "admin" &&
+              order.payment_status !== "success" && (
+                <button
+                  onClick={() => payOrder(order.id)}
+                >
+                  💳 Оплатить
+                </button>
+              )}
 
             {role === "admin" && (
               <>
@@ -100,7 +146,8 @@ function OrdersPage() {
                   </select>
                 )}
 
-                {order.status === "processing" && (
+                {order.status ===
+                  "processing" && (
                   <select
                     defaultValue=""
                     onChange={(e) =>

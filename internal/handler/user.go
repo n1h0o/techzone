@@ -7,12 +7,16 @@ import (
 	"techzone/pkg/jwt"
 )
 
-type MeResponse struct {
-	UserID int64  `json:"user_id"`
-	Login  string `json:"login"`
-	Role   string `json:"role"`
-}
-
+// GetMe godoc
+//
+// @Summary Получить профиль
+// @Description Возвращает информацию о текущем пользователе
+// @Tags auth
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} handler.MeResponse
+// @Failure 401 {string} string
+// @Router /me [get]
 func GetMe(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "only GET method", http.StatusMethodNotAllowed)

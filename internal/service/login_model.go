@@ -1,6 +1,6 @@
 package service
 
 type LoginInput struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
+	Login    string `json:"login" example:"niho"`
+	Password string `json:"password" example:"password123"`
 }

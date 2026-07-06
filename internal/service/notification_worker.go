@@ -8,6 +8,8 @@ import (
 type NotificationJob struct {
 	OrderID int64
 	UserID  int64
+
+	Message string
 }
 
 type NotificationWorkerPool struct {
@@ -42,7 +44,7 @@ func (p *NotificationWorkerPool) worker(
 			context.Background(),
 			job.UserID,
 			job.OrderID,
-			"Order created successfully",
+			job.Message,
 		)
 
 		if err != nil {

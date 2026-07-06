@@ -7,11 +7,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 )
 
 func New() *pgxpool.Pool {
-	_ = godotenv.Load()
 
 	dbURL := os.Getenv("DB_URL")
 
@@ -27,15 +25,15 @@ func New() *pgxpool.Pool {
 	}
 
 	for i := 0; i < 10; i++ {
-		err := pool.Ping(context.Background())
+		err = pool.Ping(context.Background())
 
 		if err == nil {
 			log.Println("postgres connected")
 			return pool
 		}
 		log.Printf("waiting postgres...(%d/10)", i+1)
-		time.Sleep(2 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
-	log.Fatal(err)
+	log.Fatalf("postgres connection failed: %v", err)
 	return nil
 }

@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// Product представляет товар интернет-магазина
 type Product struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`

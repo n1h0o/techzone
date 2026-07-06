@@ -78,12 +78,15 @@ func (r *OrderRepository) GetByUserID(
 		ctx,
 		`
 		SELECT
-		id,
-		status,
-		total_price
-		FROM orders
-		WHERE user_id = $1
-		ORDER BY created_at DESC
+			o.id,
+			o.status,
+			COALESCE(p.status,'not_paid') AS payment_status, 
+			o.total_price
+		FROM orders o
+		LEFT JOIN payments p
+			ON p.order_id = o.id
+		WHERE o.user_id = $1
+		ORDER BY o.created_at DESC
 		`,
 		userID,
 	)
@@ -99,6 +102,7 @@ func (r *OrderRepository) GetByUserID(
 		if err := rows.Scan(
 			&order.ID,
 			&order.Status,
+			&order.PaymentStatus,
 			&order.TotalPrice,
 		); err != nil {
 			return nil, err
@@ -217,4 +221,22 @@ func (r *OrderRepository) UpdateStatus(
 		return errors.New("order not found")
 	}
 	return nil
+}
+
+func (r *OrderRepository) LockOrder(
+	ctx context.Context,
+	orderID int64,
+) error {
+	var id int64
+
+	return r.db.QueryRow(
+		ctx,
+		`
+		SELECT id
+		FROM orders
+		WHERE id = $1
+		FOR UPDATE
+		`,
+		orderID,
+	).Scan(&id)
 }

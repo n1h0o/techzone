@@ -22,6 +22,19 @@ func NewCartHandler(
 	}
 }
 
+// AddToCart godoc
+//
+// @Summary Добавить товар в корзину
+// @Description Добавляет товар в корзину пользователя
+// @Tags cart
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body service.AddToCartInput true "Товар"
+// @Success 200 {object} handler.MessageResponse
+// @Failure 400 {string} string
+// @Failure 401 {string} string
+// @Router /cart/items [post]
 func (h *CartHandler) AddToCart(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -58,8 +71,8 @@ func (h *CartHandler) AddToCart(
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]string{
-			"message": "product added to cart",
+		MessageResponse{
+			Message: "product added to cart",
 		},
 	); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -68,6 +81,17 @@ func (h *CartHandler) AddToCart(
 
 }
 
+// GetCart godoc
+//
+// @Summary Получить корзину
+// @Description Возвращает корзину текущего пользователя
+// @Tags cart
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} handler.CartResponse
+// @Failure 401 {string} string
+// @Failure 500 {string} string
+// @Router /cart [get]
 func (h *CartHandler) GetCart(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -96,8 +120,8 @@ func (h *CartHandler) GetCart(
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string][]model.CartItemInfo{
-			"items": cart,
+		CartResponse{
+			Items: cart,
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -105,6 +129,19 @@ func (h *CartHandler) GetCart(
 	}
 }
 
+// DeleteItem godoc
+//
+// @Summary Удалить товар из корзины
+// @Description Удаляет товар из корзины пользователя
+// @Tags cart
+// @Security BearerAuth
+// @Produce json
+// @Param item_id path int true "ID элемента корзины"
+// @Success 200 {object} handler.MessageResponse
+// @Failure 400 {string} string
+// @Failure 401 {string} string
+// @Failure 404 {string} string
+// @Router /cart/items/{item_id} [delete]
 func (h *CartHandler) DeleteItem(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -145,8 +182,8 @@ func (h *CartHandler) DeleteItem(
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]string{
-			"message": "item deleted",
+		MessageResponse{
+			Message: "item deleted",
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)

@@ -23,6 +23,17 @@ func NewAuthHandler(
 	}
 }
 
+// Register godoc
+//
+// @Summary Регистрация пользователя
+// @Description Создает нового пользователя
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body service.RegisterInput true "Данные пользователя"
+// @Success 201 {object} handler.MessageResponse
+// @Failure 400 {string} string
+// @Router /register [post]
 func (h *AuthHandler) Register(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -54,12 +65,24 @@ func (h *AuthHandler) Register(
 
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "user created",
-	},
+	json.NewEncoder(w).Encode(
+		MessageResponse{
+			Message: "user created",
+		},
 	)
 }
 
+// Login godoc
+//
+// @Summary Авторизация
+// @Description Выполняет вход пользователя
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body service.LoginInput true "Логин и пароль"
+// @Success 200 {object} handler.LoginResponse
+// @Failure 401 {string} string
+// @Router /login [post]
 func (h *AuthHandler) Login(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -102,9 +125,9 @@ func (h *AuthHandler) Login(
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]string{
-			"message": "login successful",
-			"token":   token,
+		LoginResponse{
+			Message: "login successful",
+			Token:   token,
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)

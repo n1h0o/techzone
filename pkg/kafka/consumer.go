@@ -37,6 +37,10 @@ func (c *Consumer) Start(
 		}
 		fetches := c.client.PollFetches(ctx)
 
+		if ctx.Err() != nil {
+			return
+		}
+
 		if errs := fetches.Errors(); len(errs) > 0 {
 			for _, err := range errs {
 				log.Printf("kafka error: %v", err)
@@ -51,7 +55,7 @@ func (c *Consumer) Start(
 	}
 }
 
-func (c *Consumer) handleRecord(
+func (c *Consumer) handleOrderCreated(
 	ctx context.Context,
 	record *kgo.Record,
 ) error {
@@ -69,11 +73,53 @@ func (c *Consumer) handleRecord(
 		service.NotificationJob{
 			UserID:  evt.UserID,
 			OrderID: evt.OrderID,
+			Message: "Заказ успешно создан",
 		},
 	)
 
-	if err := c.client.CommitRecords(ctx, record); err != nil {
+	return c.client.CommitRecords(ctx, record)
+}
+
+func (c *Consumer) handlePaymentCreated(
+	ctx context.Context,
+	record *kgo.Record,
+) error {
+	var evt event.PaymentCompletedEvent
+
+	if err := json.Unmarshal(
+		record.Value,
+		&evt,
+	); err != nil {
+		log.Printf("failed to decode event: %v", err)
 		return err
 	}
-	return nil
+
+	c.workerPool.Submit(
+		service.NotificationJob{
+			UserID:  evt.UserID,
+			OrderID: evt.OrderID,
+			Message: "Оплата заказа успешно выполнена",
+		},
+	)
+
+	return c.client.CommitRecords(ctx, record)
+}
+
+func (c *Consumer) handleRecord(
+	ctx context.Context,
+	record *kgo.Record,
+) error {
+
+	switch record.Topic {
+	case "order.created":
+		return c.handleOrderCreated(ctx, record)
+
+	case "payment.completed":
+		return c.handlePaymentCreated(ctx, record)
+
+	default:
+		log.Printf("unknown topic: %s", record.Topic)
+		return nil
+	}
+
 }

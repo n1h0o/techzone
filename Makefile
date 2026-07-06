@@ -1,6 +1,9 @@
-.PHONY: run build tidy fmt vet
+.PHONY: run build tidy fmt vet test lint migrate-up migrate-down start stop restart
 
-run: 
+include .env
+export
+
+run:
 	go run ./cmd/server
 
 build:
@@ -15,8 +18,11 @@ fmt:
 vet:
 	go vet ./...
 
-include .env
-export
+unit:
+	go test -race ./internal/service/... ./internal/repository/...
+
+integration:
+	go test ./internal/tests/integration -v
 
 migrate-up:
 	goose -dir migrations postgres "$(DB_URL)" up
@@ -24,9 +30,14 @@ migrate-up:
 migrate-down:
 	goose -dir migrations postgres "$(DB_URL)" down
 
-test:
-	go test ./...
-
 start:
+	docker compose up -d --build
+	cd frontend && npm run dev
+
+stop:
+	docker compose down
+
+restart:
+	docker compose down
 	docker compose up -d --build
 	cd frontend && npm run dev

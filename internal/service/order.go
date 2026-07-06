@@ -69,7 +69,7 @@ func NewOrderService(
 	}
 }
 
-type orderDetails struct {
+type OrderDetails struct {
 	Order *model.Order          `json:"order"`
 	Items []model.OrderItemInfo `json:"items"`
 }
@@ -158,9 +158,16 @@ func (s *OrderService) CreateOrder(
 		return 0, err
 	}
 
+	log.Println("commit transaction")
+
 	if err := tx.Commit(ctx); err != nil {
 		return 0, err
 	}
+
+	log.Println("transaction committed")
+
+	log.Println("publishing order.created")
+
 	err = s.publisher.PublishOrderCreated(
 		ctx,
 		event.OrderCreatedEvent{
@@ -168,6 +175,8 @@ func (s *OrderService) CreateOrder(
 			UserID:  userID,
 		},
 	)
+
+	log.Println("publish finished")
 	if err != nil {
 		log.Printf(
 			"failed to publish order.created event: %v",
@@ -196,7 +205,7 @@ func (s *OrderService) GetOrder(
 	ctx context.Context,
 	userID int64,
 	orderID int64,
-) (*orderDetails, error) {
+) (*OrderDetails, error) {
 	order, err := s.orderRepo.GetByID(
 		ctx,
 		orderID,
@@ -213,7 +222,7 @@ func (s *OrderService) GetOrder(
 		return nil, err
 	}
 
-	return &orderDetails{
+	return &OrderDetails{
 		Order: order,
 		Items: items,
 	}, nil
@@ -236,19 +245,27 @@ func (s *OrderService) UpdateStatus(
 	}
 
 	switch order.Status {
-	case "new":
-		if status != "processing" {
+
+	case model.OrderNew:
+		if status != model.OrderProcessing {
 			return errors.New("invalid status transition")
 		}
-	case "processing":
-		if status != "completed" {
+
+	case model.OrderProcessing:
+		if status != model.OrderCompleted {
 			return errors.New("invalid status transition")
 		}
-	case "completed":
+
+	case model.OrderCompleted:
 		return errors.New("order already completed")
+
+	case model.OrderCancelled:
+		return errors.New("order is cancelled")
+
 	default:
-		return errors.New("invalid status")
+		return errors.New("unknown order status")
 	}
+
 	return s.orderRepo.UpdateStatus(
 		ctx,
 		orderID,

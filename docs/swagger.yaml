@@ -1,0 +1,737 @@
+basePath: /
+definitions:
+  handler.CartResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.CartItemInfo'
+        type: array
+    type: object
+  handler.LoginResponse:
+    properties:
+      message:
+        type: string
+      token:
+        type: string
+    type: object
+  handler.MeResponse:
+    properties:
+      login:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  handler.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  handler.NotificationsResponse:
+    properties:
+      notifications:
+        items:
+          $ref: '#/definitions/model.Notification'
+        type: array
+    type: object
+  handler.OrderCreateResponse:
+    properties:
+      order_id:
+        type: integer
+    type: object
+  handler.OrdersResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/model.OrderInfo'
+        type: array
+    type: object
+  handler.PaymentRequest:
+    properties:
+      order_id:
+        example: 15
+        type: integer
+    type: object
+  handler.ProductStatusInput:
+    properties:
+      is_active:
+        type: boolean
+    type: object
+  handler.UpdateStatusRequest:
+    properties:
+      status:
+        example: processing
+        type: string
+    type: object
+  model.CartItemInfo:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  model.Notification:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      message:
+        type: string
+      order_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  model.Order:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      total_price:
+        type: number
+      user_id:
+        type: integer
+    type: object
+  model.OrderInfo:
+    properties:
+      id:
+        type: integer
+      payment_status:
+        type: string
+      status:
+        type: string
+      total_price:
+        type: number
+    type: object
+  model.OrderItemInfo:
+    properties:
+      name:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  model.Payment:
+    properties:
+      amount:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      idempotency_key:
+        type: string
+      order_id:
+        type: integer
+      status:
+        type: string
+      transaction_id:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  model.Product:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: integer
+      stock:
+        type: integer
+    type: object
+  service.AddToCartInput:
+    properties:
+      product_id:
+        example: 1
+        type: integer
+      quantity:
+        example: 2
+        type: integer
+    type: object
+  service.CreateProductInput:
+    properties:
+      description:
+        example: Apple smartphone
+        type: string
+      image_url:
+        example: https://example.com/iphone.jpg
+        type: string
+      name:
+        example: iPhone 17
+        type: string
+      price:
+        example: 99990
+        type: integer
+      stock:
+        example: 10
+        type: integer
+    type: object
+  service.LoginInput:
+    properties:
+      login:
+        example: niho
+        type: string
+      password:
+        example: password123
+        type: string
+    type: object
+  service.OrderDetails:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.OrderItemInfo'
+        type: array
+      order:
+        $ref: '#/definitions/model.Order'
+    type: object
+  service.RegisterInput:
+    properties:
+      email:
+        example: niho@example.com
+        type: string
+      login:
+        example: niho
+        type: string
+      password:
+        example: password123
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Backend интернет-магазина TechZone
+  title: TechZone API
+  version: "1.0"
+paths:
+  /admin/products:
+    get:
+      description: Возвращает полный список товаров, включая неактивные. Доступно
+        только администраторам.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Product'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить список всех товаров
+      tags:
+      - products
+  /cart:
+    get:
+      description: Возвращает корзину текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CartResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить корзину
+      tags:
+      - cart
+  /cart/items:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет товар в корзину пользователя
+      parameters:
+      - description: Товар
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.AddToCartInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Добавить товар в корзину
+      tags:
+      - cart
+  /cart/items/{item_id}:
+    delete:
+      description: Удаляет товар из корзины пользователя
+      parameters:
+      - description: ID элемента корзины
+        in: path
+        name: item_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Удалить товар из корзины
+      tags:
+      - cart
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет вход пользователя
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Авторизация
+      tags:
+      - auth
+  /me:
+    get:
+      description: Возвращает информацию о текущем пользователе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить профиль
+      tags:
+      - auth
+  /notifications:
+    get:
+      description: Возвращает список уведомлений текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.NotificationsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить уведомления
+      tags:
+      - notifications
+  /orders:
+    get:
+      description: Возвращает все заказы текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.OrdersResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить список заказов
+      tags:
+      - orders
+    post:
+      description: Создает заказ из текущей корзины пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.OrderCreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Создать заказ
+      tags:
+      - orders
+  /orders/{id}:
+    get:
+      description: Возвращает заказ вместе с товарами
+      parameters:
+      - description: ID заказа
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.OrderDetails'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить заказ
+      tags:
+      - orders
+  /orders/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Изменяет статус заказа (только для администратора)
+      parameters:
+      - description: ID заказа
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новый статус
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Обновить статус заказа
+      tags:
+      - orders
+  /payments:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет оплату заказа с использованием Idempotency-Key
+      parameters:
+      - description: Данные платежа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.PaymentRequest'
+      - description: Уникальный ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Payment'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Оплатить заказ
+      tags:
+      - payments
+  /products:
+    get:
+      description: Возвращает список активных товаров
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Product'
+            type: array
+      summary: Получить список товаров
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Создает новый товар
+      parameters:
+      - description: Данные товара
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateProductInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Создать товар
+      tags:
+      - products
+  /products/{id}:
+    get:
+      description: Возвращает товар по ID
+      parameters:
+      - description: ID товара
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Product'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Получить товар
+      tags:
+      - products
+    put:
+      consumes:
+      - application/json
+      description: Полностью обновляет товар
+      parameters:
+      - description: ID товара
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateProductInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Обновить товар
+      tags:
+      - products
+  /products/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Активирует или деактивирует товар
+      parameters:
+      - description: ID товара
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Статус товара
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ProductStatusInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Изменить статус товара
+      tags:
+      - products
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя
+      parameters:
+      - description: Данные пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.RegisterInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Регистрация пользователя
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

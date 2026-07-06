@@ -5,195 +5,74 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"techzone/internal/config"
-	"techzone/internal/handler"
-	"techzone/internal/middleware"
-	"techzone/internal/repository"
-	"techzone/internal/service"
-	"techzone/pkg/kafka"
-	"techzone/pkg/postgres"
-	"techzone/pkg/redis"
+	"os/signal"
+	"syscall"
+	"techzone/internal/app"
+	"time"
+
+	_ "techzone/docs"
+
+	"github.com/joho/godotenv"
 )
 
+// @title TechZone API
+// @version 1.0
+// @description Backend интернет-магазина TechZone
+// @host localhost:8080
+// @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
-	cfg := config.Load()
-	db := postgres.New()
 
-	redisClient, err := redis.New()
-	if err != nil {
-		log.Fatal(err)
-	}
+	_ = godotenv.Load()
 
-	producerClient, err := kafka.NewProducerClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-	consumerClient, err := kafka.NewConsumerClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer db.Close()
-	defer redisClient.Close()
-	defer producerClient.Close()
-	defer consumerClient.Close()
-
-	userRepo := repository.NewUserRepository(db)
-
-	authService := service.NewAuthService(userRepo)
-
-	authHandler := handler.NewAuthHandler(authService, cfg)
-
-	productRepo := repository.NewProductRepository(db)
-	productService := service.NewProductService(productRepo, redisClient)
-	productHandler := handler.NewProductHandler(productService)
-
-	cartRepo := repository.NewCartRepository(db)
-	cartService := service.NewCartService(cartRepo)
-	cartHandler := handler.NewCartHandler(cartService)
-
-	orderRepo := repository.NewOrderRepository(db)
-	notificationRepo := repository.NewNotificationRepository(
-		db,
-	)
-	notificationService := service.NewNotificationService(
-		notificationRepo,
-	)
-	notificationPool := service.NewNotificationWorkerPool(
-		5,
-		notificationService,
-	)
-	notificationHandler := handler.NewNotificationHandler(
-		notificationService,
-	)
-
-	producer := kafka.NewProducer(producerClient)
-	consumer := kafka.NewConsumer(consumerClient, notificationPool)
-	go consumer.Start(context.Background())
-
-	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, producer, db)
-	orderHandler := handler.NewOrderHandler(orderService, notificationPool)
-
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /health", handler.GetHealth)
-	mux.HandleFunc("POST /register", authHandler.Register)
-	mux.HandleFunc("POST /login", authHandler.Login)
-	mux.Handle(
-		"GET /me",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(
-				handler.GetMe,
-			),
-		),
-	)
-	mux.HandleFunc("GET /products", productHandler.GetProducts)
-	mux.Handle(
-		"GET /admin/products",
-		middleware.AuthMiddleware(cfg)(
-			middleware.AdminMiddleware(
-				http.HandlerFunc(
-					productHandler.GetProductsForAdmin,
-				),
-			),
-		),
-	)
-	mux.Handle(
-		"POST /products",
-		middleware.AuthMiddleware(cfg)(
-			middleware.AdminMiddleware(
-				http.HandlerFunc(
-					productHandler.CreateProduct,
-				),
-			),
-		),
-	)
-	mux.Handle(
-		"PUT /products/{id}",
-		middleware.AuthMiddleware(cfg)(
-			middleware.AdminMiddleware(
-				http.HandlerFunc(productHandler.UpdateProduct),
-			),
-		),
-	)
-	mux.Handle(
-		"PATCH /products/{id}/status",
-		middleware.AuthMiddleware(cfg)(
-			middleware.AdminMiddleware(
-				http.HandlerFunc(productHandler.SetProductStatus),
-			),
-		),
-	)
-
-	mux.HandleFunc("GET /products/{id}", productHandler.GetProduct)
-	mux.Handle(
-		"POST /cart/items",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(
-				cartHandler.AddToCart,
-			),
-		),
-	)
-	mux.Handle(
-		"GET /cart",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(cartHandler.GetCart),
-		),
-	)
-	mux.Handle(
-		"DELETE /cart/items/{item_id}",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(
-				cartHandler.DeleteItem,
-			),
-		),
-	)
-
-	mux.Handle(
-		"POST /orders",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(orderHandler.CreateOrder),
-		),
-	)
-	mux.Handle(
-		"GET /orders",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(orderHandler.GetOrders),
-		),
-	)
-	mux.Handle(
-		"GET /orders/{id}",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(orderHandler.GetOrderByID),
-		),
-	)
-
-	mux.Handle(
-		"PATCH /orders/{id}/status",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(orderHandler.UpdateStatus),
-		),
-	)
-
-	mux.Handle(
-		"GET /notifications",
-		middleware.AuthMiddleware(cfg)(
-			http.HandlerFunc(
-				notificationHandler.GetNotifications,
-			),
-		),
-	)
-
-	handlerWithCors := middleware.CORSMiddleware(mux)
+	application := app.NewServer(false)
+	defer application.Close()
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	log.Printf("server started on :%s", port)
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: application.Handler(),
+	}
 
-	if err := http.ListenAndServe(":"+port, handlerWithCors); err != nil {
+	go func() {
+		log.Printf("server started on :%s", port)
+
+		if err := srv.ListenAndServe(); err != nil &&
+			err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(
+		quit,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+
+	<-quit
+
+	log.Println("shutting down server")
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		5*time.Second,
+	)
+
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("server stopped")
+
 }

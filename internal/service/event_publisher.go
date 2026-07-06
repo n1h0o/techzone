@@ -10,4 +10,8 @@ type EventPublisher interface {
 		ctx context.Context,
 		event event.OrderCreatedEvent,
 	) error
+	PublishPaymentCompleted(
+		ctx context.Context,
+		event event.PaymentCompletedEvent,
+	) error
 }

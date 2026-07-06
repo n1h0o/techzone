@@ -186,7 +186,7 @@ func TestUpdateStatus_CompletedOrder(t *testing.T) {
 	err := service.UpdateStatus(
 		context.Background(),
 		1,
-		"Processing",
+		"processing",
 		1,
 	)
 	if err == nil {

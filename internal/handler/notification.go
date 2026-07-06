@@ -20,6 +20,17 @@ func NewNotificationHandler(
 	}
 }
 
+// GetNotifications godoc
+//
+// @Summary Получить уведомления
+// @Description Возвращает список уведомлений текущего пользователя
+// @Tags notifications
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} handler.NotificationsResponse
+// @Failure 401 {string} string
+// @Failure 500 {string} string
+// @Router /notifications [get]
 func (h *NotificationHandler) GetNotifications(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -48,8 +59,8 @@ func (h *NotificationHandler) GetNotifications(
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(
-		map[string]any{
-			"notifications": notifications,
+		NotificationsResponse{
+			Notifications: notifications,
 		},
 	); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
