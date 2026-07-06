@@ -8,10 +8,12 @@ import (
 )
 
 func New() (*redis.Client, error) {
-	addr := os.Getenv("REDIS_ADDR")
+	host := os.Getenv("REDIS_HOST")
+	port := os.Getenv("REDIS_PORT")
 
 	client := redis.NewClient(&redis.Options{
-		Addr: addr,
+		Addr:     host + ":" + port,
+		Password: os.Getenv("REDIS_PASSWORD"),
 	})
 
 	if err := client.Ping(context.Background()).Err(); err != nil {
