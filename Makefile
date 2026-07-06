@@ -1,6 +1,6 @@
 .PHONY: run build tidy fmt vet test lint migrate-up migrate-down start stop restart
 
-include .env
+-include .env
 export
 
 run:
