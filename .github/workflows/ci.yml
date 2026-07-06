@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - master
-      - develop
 
   pull_request:
 
@@ -29,14 +27,43 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
 
       - name: Download dependencies
         run: go mod download
 
-      - name: Run unit tests
-        run: go test ./internal/service/...
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Build application
-        run: go build ./cmd/server
+      - name: Install Goose
+        run: |
+          go install github.com/pressly/goose/v3/cmd/goose@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Start infrastructure
+        run: docker compose up -d postgres redis redpanda
+
+      - name: Wait for containers
+        run: sleep 20
+
+      - name: Run migrations
+        env:
+          DB_URL: postgres://postgres:1234@localhost:5432/study?sslmode=disable
+        run: make migrate-up
+
+      - name: Run unit tests
+        run: make unit
+
+      - name: Run golangci-lint
+        run: golangci-lint run ./...
+
+      - name: Run integration tests
+        env:
+          DB_URL: postgres://postgres:1234@localhost:5432/study?sslmode=disable
+          REDIS_ADDR: localhost:6379
+          KAFKA_BROKERS: localhost:9092
+        run: make integration
+
+      - name: Build Docker image
+        run: docker build -t techzone .

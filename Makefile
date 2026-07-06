@@ -24,6 +24,9 @@ unit:
 integration:
 	go test ./internal/tests/integration -v
 
+lint:
+	golangci-lint run ./...
+
 migrate-up:
 	goose -dir migrations postgres "$(DB_URL)" up
 
