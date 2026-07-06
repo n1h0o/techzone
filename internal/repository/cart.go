@@ -158,7 +158,7 @@ func (r *CartRepository) DeleteItem(
 	}
 
 	if tag.RowsAffected() == 0 {
-		return errors.New("Item not found")
+		return errors.New("item not found")
 	}
 	return nil
 }

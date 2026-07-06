@@ -196,7 +196,11 @@ func (s *PaymentService) Pay(
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			log.Printf("rollback skipped: %v", err)
+		}
+	}()
 
 	paymentRepo := repository.NewPaymentRepository(tx)
 	orderRepo := repository.NewOrderRepository(tx)
@@ -251,16 +255,16 @@ func (s *PaymentService) Pay(
 		return nil, err
 	}
 	if pay.Status == model.PaymentSuccess {
-		s.publisher.PublishPaymentCompleted(
+		if err := s.publisher.PublishPaymentCompleted(
 			ctx,
 			event.PaymentCompletedEvent{
 				PaymentID: pay.ID,
 				OrderID:   pay.OrderID,
 				UserID:    pay.UserID,
 			},
-		)
-	} else {
-		log.Printf("failed to publish payment.completed: %v", err)
+		); err != nil {
+			log.Printf("failed to publish payment.completed: %v", err)
+		}
 	}
 	return pay, nil
 }

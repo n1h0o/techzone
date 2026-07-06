@@ -288,7 +288,9 @@ func (a *App) Close() {
 	}
 
 	if a.redisClient != nil {
-		a.redisClient.Close()
+		if err := a.redisClient.Close(); err != nil {
+			log.Printf("failed to close redis client: %v", err)
+		}
 	}
 
 	if a.db != nil {

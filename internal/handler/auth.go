@@ -65,11 +65,14 @@ func (h *AuthHandler) Register(
 
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(
+	if err := json.NewEncoder(w).Encode(
 		MessageResponse{
 			Message: "user created",
 		},
-	)
+	); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 }
 
 // Login godoc

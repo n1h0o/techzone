@@ -91,7 +91,11 @@ func (s *OrderService) CreateOrder(
 	orderRepo := repository.NewOrderRepository(tx)
 	cartRepo := repository.NewCartRepository(tx)
 	productRepo := repository.NewProductRepository(tx)
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			log.Printf("rollback skipped: %v", err)
+		}
+	}()
 
 	var sum float64
 

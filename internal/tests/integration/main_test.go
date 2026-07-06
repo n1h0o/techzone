@@ -26,7 +26,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	defer db.Close()
+	defer func() {
+		if db != nil {
+			db.Close()
+		}
+	}()
 
 	code := m.Run()
 
