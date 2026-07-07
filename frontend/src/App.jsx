@@ -18,8 +18,6 @@ import AdminRoute from "./components/AdminRoute";
 import AdminPage from "./pages/AdminPage";
 import AdminLayout from "./components/AdminLayout";
 import AdminProductsPage from "./pages/AdminProductsPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminOrdersPage from "./pages/AdminOrdersPage";
 
 function App() {
   return (
