@@ -1,79 +1,119 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function Navbar() {
+function ProfilePage() {
   const { user, logout } = useAuth();
 
-  const navigate = useNavigate();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
+  function getRole(role) {
+    switch (role) {
+      case "admin":
+        return "Администратор";
+
+      case "client":
+        return "Покупатель";
+
+      default:
+        return role;
+    }
+  }
+
+  function getRoleIcon(role) {
+    switch (role) {
+      case "admin":
+        return "🛡️";
+
+      case "client":
+        return "🛒";
+
+      default:
+        return "👤";
+    }
   }
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        gap: "20px",
-        padding: "20px",
-        alignItems: "center",
-      }}
-    >
-      <Link to="/products">Товары</Link>
+    <div className="container">
+      <div className="profile-card">
 
-      {user && (
-        <>
-          <Link to="/cart">Корзина</Link>
+        <div className="profile-avatar">
+          👤
+        </div>
 
-          <Link to="/orders">Заказы</Link>
+        <h1>{user.login}</h1>
 
-          <Link to="/notifications">
-            Уведомления
+        <p className="profile-role">
+          {getRoleIcon(user.role)} {getRole(user.role)}
+        </p>
+
+        <div className="profile-info">
+
+          <div className="profile-item">
+            <span>👤 Логин</span>
+
+            <strong>{user.login}</strong>
+          </div>
+
+          <div className="profile-item">
+            <span>📧 Email</span>
+
+            <strong>{user.email}</strong>
+          </div>
+
+          <div className="profile-item">
+            <span>🛡️ Роль</span>
+
+            <strong>{getRole(user.role)}</strong>
+          </div>
+
+        </div>
+
+        <div className="profile-actions">
+
+          <Link
+            className="profile-btn"
+            to="/cart"
+          >
+            🛒 Корзина
           </Link>
-        </>
-      )}
 
-      {user?.role === "admin" && (
-        <Link to="/admin/products">
-          Добавить товар
-        </Link>
-      )}
+          <Link
+            className="profile-btn"
+            to="/orders"
+          >
+            📦 Мои заказы
+          </Link>
 
-      <div
-        style={{
-          marginLeft: "auto",
-          display: "flex",
-          gap: "15px",
-          alignItems: "center",
-        }}
-      >
-        {!user ? (
-          <>
-            <Link to="/login">Вход</Link>
+          <Link
+            className="profile-btn"
+            to="/notifications"
+          >
+            🔔 Уведомления
+          </Link>
 
-            <Link to="/register">
-              Регистрация
+          {user.role === "admin" && (
+            <Link
+              className="profile-btn"
+              to="/admin"
+            >
+              ⚙️ Админ-панель
             </Link>
-          </>
-        ) : (
-          <>
-            <span>
-              👤 {user.login}
-            </span>
+          )}
 
-            <Link to="/profile">
-              Профиль
-            </Link>
+        </div>
 
-            <button onClick={handleLogout}>
-              Выйти
-            </button>
-          </>
-        )}
+        <button
+          className="logout-btn"
+          onClick={logout}
+        >
+          Выйти из аккаунта
+        </button>
+
       </div>
-    </nav>
+    </div>
   );
 }
 
-export default Navbar;
+export default ProfilePage;

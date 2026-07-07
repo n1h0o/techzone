@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import api from "../api/api";
+import { useCart } from "../context/CartContext";
 
 function CartPage() {
   const [items, setItems] = useState([]);
+
   const navigate = useNavigate();
+
+  const {
+    clearCart,
+    refreshCart,
+  } = useCart();
 
   useEffect(() => {
     loadCart();
@@ -13,18 +22,28 @@ function CartPage() {
   async function loadCart() {
     try {
       const res = await api.get("/cart");
+
       setItems(res.data.items || []);
+
+      refreshCart();
     } catch (err) {
       console.error(err);
+      toast.error("Не удалось загрузить корзину");
     }
   }
 
-  async function removeItem(id) {
+  async function removeItem(item) {
     try {
-      await api.delete(`/cart/items/${id}`);
-      loadCart();
+      await api.delete(`/cart/items/${item.id}`);
+
+      await refreshCart();
+
+      toast.success("Товар удалён из корзины");
+
+      await loadCart();
     } catch (err) {
       console.error(err);
+      toast.error("Не удалось удалить товар");
     }
   }
 
@@ -32,44 +51,115 @@ function CartPage() {
     try {
       const res = await api.post("/orders");
 
-      alert(
-        `Заказ №${res.data.order_id} создан`
+      clearCart();
+
+      toast.success(
+        `Заказ №${res.data.order_id} успешно создан 🎉`
       );
 
       navigate("/orders");
     } catch (err) {
       console.error(err);
-      alert("Ошибка создания заказа");
+
+      if (err.response?.data) {
+        toast.error(err.response.data);
+      } else {
+        toast.error("Ошибка создания заказа");
+      }
     }
   }
 
+  const totalPrice = useMemo(() => {
+    return items.reduce(
+      (sum, item) =>
+        sum + item.price * item.quantity,
+      0
+    );
+  }, [items]);
+
   return (
-    <div>
-      <h1>Корзина</h1>
+    <div className="container">
+      <h1>🛒 Корзина</h1>
 
       {items.length === 0 ? (
-        <p>Корзина пуста</p>
+        <div className="card">
+          <h2>Корзина пуста</h2>
+
+          <p>
+            Добавьте товары из каталога.
+          </p>
+        </div>
       ) : (
         <>
-          {items.map((item) => (
-            <div key={item.id}>
-              <h3>{item.name}</h3>
-
-              <p>Цена: {item.price} ₽</p>
-
-              <p>Количество: {item.quantity}</p>
-
-              <button
-                onClick={() => removeItem(item.id)}
+          <div className="products-grid">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="product-card"
               >
-                Удалить
-              </button>
-            </div>
-          ))}
+                <h2>{item.name}</h2>
 
-          <button onClick={createOrder}>
-            Оформить заказ
-          </button>
+                <p>
+                  Цена:{" "}
+                  <strong>
+                    {Number(item.price).toLocaleString(
+                      "ru-RU"
+                    )}{" "}
+                    ₽
+                  </strong>
+                </p>
+
+                <p>
+                  Количество:{" "}
+                  <strong>{item.quantity}</strong>
+                </p>
+
+                <p>
+                  Сумма:{" "}
+                  <strong>
+                    {Number(
+                      item.price * item.quantity
+                    ).toLocaleString("ru-RU")}{" "}
+                    ₽
+                  </strong>
+                </p>
+
+                <button
+                  className="btn-danger"
+                  onClick={() =>
+                    removeItem(item)
+                  }
+                >
+                  Удалить
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="card"
+            style={{
+              marginTop: 30,
+            }}
+          >
+            <h2>
+              Итого:{" "}
+              {totalPrice.toLocaleString(
+                "ru-RU"
+              )}{" "}
+              ₽
+            </h2>
+
+            <button
+              style={{
+                marginTop: 20,
+                width: "100%",
+              }}
+              onClick={createOrder}
+            >
+              Оформить заказ
+            </button>
+          </div>
         </>
       )}
     </div>

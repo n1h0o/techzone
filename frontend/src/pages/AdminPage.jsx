@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
+import { toast } from "sonner";
 
 function AdminPage() {
   const emptyForm = {
@@ -22,7 +23,7 @@ function AdminPage() {
       const res = await api.get("/products");
       setProducts(res.data);
     } catch {
-      alert("Не удалось загрузить товары");
+      toast.error("Не удалось загрузить товары");
     }
   }
 
@@ -45,7 +46,7 @@ function AdminPage() {
           stock: Number(form.stock),
         });
 
-        alert("Товар обновлен");
+        toast.success("Товар обновлен");
       } else {
         await api.post("/products", {
           name: form.name,
@@ -54,7 +55,7 @@ function AdminPage() {
           stock: Number(form.stock),
         });
 
-        alert("Товар добавлен");
+        toast.success("Товар добавлен");
       }
 
       setForm(emptyForm);
@@ -62,7 +63,7 @@ function AdminPage() {
       loadProducts();
     } catch (err) {
       console.error(err);
-      alert("Ошибка");
+      toast.error("Ошибка");
     }
   }
 
@@ -77,22 +78,22 @@ function AdminPage() {
     });
   }
 
-  async function deleteProduct(id) {
-    if (!window.confirm("Удалить товар?")) {
-      return;
-    }
-
-    try {
-      await api.delete(`/products/${id}`);
-
-      alert("Удалено");
-
-      loadProducts();
-    } catch (err) {
-      console.error(err);
-      alert("Ошибка удаления");
-    }
+ async function deleteProduct(id) {
+  if (!window.confirm("Удалить товар?")) {
+    return;
   }
+
+  try {
+    await api.delete(`/products/${id}`);
+
+    toast.success("Товар удалён");
+
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    toast.error("Ошибка удаления товара");
+  }
+}
 
   return (
     <div className="container">

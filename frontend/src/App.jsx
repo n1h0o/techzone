@@ -91,20 +91,13 @@ function App() {
         </AdminRoute>
     }
 >
-    <Route
-        index
-        element={<AdminDashboard />}
-    />
+
 
     <Route
         path="products"
         element={<AdminProductsPage />}
     />
 
-    <Route
-        path="orders"
-        element={<AdminOrdersPage />}
-    />
         </Route>
 
         <Route

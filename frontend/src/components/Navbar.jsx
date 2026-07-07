@@ -1,70 +1,81 @@
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 
 function Navbar() {
   const { user, logout } = useAuth();
+  const { cartCount, clearCart } = useCart();
 
   const navigate = useNavigate();
 
   function handleLogout() {
     logout();
-    navigate("/");
+    clearCart();
+    navigate("/login");
   }
 
   return (
     <header className="navbar">
-      <div className="navbar-left">
-        <Link className="logo" to="/">
-          TechZone
-        </Link>
 
-        <Link to="/products">
-          Каталог
-        </Link>
+      <div className="navbar-left">
+        <NavLink className="logo" to="/">
+          🛍️ TechZone
+        </NavLink>
+
+        <NavLink to="/products">
+          📦 Каталог
+        </NavLink>
 
         {user && (
           <>
-            <Link to="/cart">
-              Корзина
-            </Link>
+            <NavLink
+              to="/cart"
+              className="cart-link"
+            >
+              🛒 Корзина
 
-            <Link to="/orders">
-              Заказы
-            </Link>
+              {cartCount > 0 && (
+                <span className="cart-badge">
+                  {cartCount}
+                </span>
+              )}
+            </NavLink>
 
-            <Link to="/notifications">
-              Уведомления
-            </Link>
+            <NavLink to="/orders">
+              📋 Заказы
+            </NavLink>
+
+            <NavLink to="/notifications">
+              🔔 Уведомления
+            </NavLink>
           </>
         )}
 
         {user?.role === "admin" && (
-          <Link to="/admin">
-            Админ-панель
-          </Link>
+          <NavLink to="/admin">
+            ⚙️ Админ
+          </NavLink>
         )}
       </div>
 
       <div className="navbar-right">
+
         {!user ? (
           <>
-            <Link to="/login">
+            <NavLink to="/login">
               Вход
-            </Link>
+            </NavLink>
 
-            <Link to="/register">
+            <NavLink to="/register">
               Регистрация
-            </Link>
+            </NavLink>
           </>
         ) : (
           <>
-            <span className="username">
+            <NavLink to="/profile">
               👤 {user.login}
-            </span>
-
-            <Link to="/profile">
-              Профиль
-            </Link>
+            </NavLink>
 
             <button
               className="logout-btn"
@@ -74,7 +85,9 @@ function Navbar() {
             </button>
           </>
         )}
+
       </div>
+
     </header>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
 
 import api from "../api/api";
 import { pay } from "../api/payment";
@@ -19,6 +20,7 @@ function OrdersPage() {
       setOrders(res.data.orders || []);
     } catch (err) {
       console.error(err);
+      toast.error("Не удалось загрузить заказы");
     }
   }
 
@@ -32,12 +34,12 @@ function OrdersPage() {
         status,
       });
 
-      alert("Статус обновлён");
+      toast.success("Статус заказа обновлён");
 
       loadOrders();
     } catch (err) {
       console.error(err);
-      alert("Ошибка обновления статуса");
+      toast.error("Не удалось обновить статус");
     }
   }
 
@@ -47,16 +49,16 @@ function OrdersPage() {
 
       await pay(orderId, idempotencyKey);
 
-      alert("Оплата прошла успешно");
+      toast.success("Оплата прошла успешно 💳");
 
       loadOrders();
     } catch (err) {
       console.error(err);
 
       if (err.response?.data) {
-        alert(err.response.data);
+        toast.error(err.response.data);
       } else {
-        alert("Ошибка оплаты");
+        toast.error("Ошибка оплаты");
       }
     }
   }
@@ -146,8 +148,7 @@ function OrdersPage() {
                   </select>
                 )}
 
-                {order.status ===
-                  "processing" && (
+                {order.status === "processing" && (
                   <select
                     defaultValue=""
                     onChange={(e) =>

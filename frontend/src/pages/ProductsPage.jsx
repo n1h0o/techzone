@@ -1,32 +1,34 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import api from "../api/api";
+import { useCart } from "../context/CartContext";
 
 function ProductsPage() {
   const [products, setProducts] = useState([]);
+
+  const { refreshCart } = useCart();
 
   useEffect(() => {
     loadProducts();
   }, []);
 
- async function loadProducts() {
-  try {
-    const res = await api.get("/products");
-
-    console.log("Ответ сервера:", res.data);
-    console.log("Это массив?", Array.isArray(res.data));
-
-    setProducts(res.data);
-  } catch (err) {
-    console.error(err);
+  async function loadProducts() {
+    try {
+      const res = await api.get("/products");
+      setProducts(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Не удалось загрузить товары");
+    }
   }
-}
 
   async function addToCart(productId) {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert(
-        "Для добавления товара необходимо войти или зарегистрироваться."
+      toast.warning(
+        "Для добавления товара необходимо войти в аккаунт"
       );
       return;
     }
@@ -37,10 +39,17 @@ function ProductsPage() {
         quantity: 1,
       });
 
-      alert("Товар добавлен в корзину");
+      await refreshCart();
+
+      toast.success("Товар добавлен в корзину 🛒");
     } catch (err) {
       console.error(err);
-      alert("Не удалось добавить товар");
+
+      if (err.response?.data) {
+        toast.error(err.response.data);
+      } else {
+        toast.error("Не удалось добавить товар");
+      }
     }
   }
 
@@ -78,7 +87,10 @@ function ProductsPage() {
 
               <div className="product-info">
                 <span className="price">
-                  {Number(product.price).toLocaleString("ru-RU")} ₽
+                  {Number(product.price).toLocaleString(
+                    "ru-RU"
+                  )}{" "}
+                  ₽
                 </span>
 
                 <span className="stock">
@@ -92,7 +104,7 @@ function ProductsPage() {
                   addToCart(product.id)
                 }
               >
-                Добавить в корзину
+                🛒 Добавить в корзину
               </button>
             </div>
           ))}

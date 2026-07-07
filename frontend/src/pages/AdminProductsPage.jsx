@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/api";
+import { toast } from "sonner";
 
 function AdminProductsPage() {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ function AdminProductsPage() {
       setProducts(res.data);
     } catch (err) {
       console.error(err);
-      alert("Не удалось загрузить товары");
+      toast.error("Не удалось загрузить товары");
     }
   }
 
@@ -61,16 +62,16 @@ function AdminProductsPage() {
         is_active: isActive,
       });
 
-      alert(
+      toast.success(
         isActive
-          ? "Товар восстановлен"
+          ? "Товар успешно восстановлен"
           : "Товар скрыт"
       );
 
       loadProducts();
     } catch (err) {
       console.error(err);
-      alert("Ошибка");
+      toast.error("Не удалось изменить статус товара");
     }
   }
 
@@ -87,7 +88,7 @@ function AdminProductsPage() {
           image_url: imageURL,
         });
 
-        alert("Товар обновлён");
+        toast.success("Товар успешно обновлён");
       } else {
         await api.post("/products", {
           name,
@@ -97,14 +98,14 @@ function AdminProductsPage() {
           image_url: imageURL,
         });
 
-        alert("Товар создан");
+        toast.success("Товар успешно создан");
       }
 
       clearForm();
       loadProducts();
     } catch (err) {
       console.error(err);
-      alert("Ошибка");
+      toast.error("Не удалось сохранить товар");
     }
   }
 
@@ -119,6 +120,7 @@ function AdminProductsPage() {
       </div>
     );
   }
+
   return (
     <div className="container">
       <h1>Управление товарами</h1>
@@ -191,7 +193,8 @@ function AdminProductsPage() {
       </form>
 
       <hr />
-            {products.length === 0 ? (
+
+      {products.length === 0 ? (
         <p>Товаров пока нет.</p>
       ) : (
         <div className="products-grid">
@@ -246,9 +249,7 @@ function AdminProductsPage() {
 
               <div className="admin-actions">
                 <button
-                  onClick={() =>
-                    editProduct(product)
-                  }
+                  onClick={() => editProduct(product)}
                 >
                   Редактировать
                 </button>
@@ -257,10 +258,7 @@ function AdminProductsPage() {
                   <button
                     className="btn-danger"
                     onClick={() =>
-                      changeStatus(
-                        product.id,
-                        false
-                      )
+                      changeStatus(product.id, false)
                     }
                   >
                     Скрыть
@@ -269,10 +267,7 @@ function AdminProductsPage() {
                   <button
                     className="btn-success"
                     onClick={() =>
-                      changeStatus(
-                        product.id,
-                        true
-                      )
+                      changeStatus(product.id, true)
                     }
                   >
                     Восстановить

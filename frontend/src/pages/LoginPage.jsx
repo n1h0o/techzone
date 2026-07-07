@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -32,12 +34,21 @@ function LoginPage() {
 
       setUser(me.data);
 
-      alert("Успешный вход");
+      toast.success(
+        `Добро пожаловать, ${me.data.login}!`
+      );
 
       navigate("/");
     } catch (err) {
       console.error(err);
-      alert("Ошибка авторизации");
+
+      if (err.response?.data) {
+        toast.error(err.response.data);
+      } else {
+        toast.error(
+          "Не удалось выполнить вход"
+        );
+      }
     }
   }
 
