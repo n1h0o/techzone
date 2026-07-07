@@ -131,7 +131,7 @@ func NewServer(testMode bool) *App {
 		go consumer.Start(ctx)
 	}
 
-	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, producer, db)
+	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, producer, db, redisClient)
 	orderHandler := handler.NewOrderHandler(orderService)
 
 	paymentService := service.NewPaymentService(gateway, producer, db)

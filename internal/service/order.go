@@ -9,6 +9,7 @@ import (
 	"techzone/internal/repository"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 type OrderRepository interface {
@@ -51,6 +52,7 @@ type OrderService struct {
 	productRepo ProductRepository
 	publisher   EventPublisher
 	db          *pgxpool.Pool
+	redis       *redis.Client
 }
 
 func NewOrderService(
@@ -59,6 +61,7 @@ func NewOrderService(
 	productRepo ProductRepository,
 	publisher EventPublisher,
 	db *pgxpool.Pool,
+	redis *redis.Client,
 ) *OrderService {
 	return &OrderService{
 		orderRepo:   orderRepo,
@@ -66,6 +69,7 @@ func NewOrderService(
 		productRepo: productRepo,
 		publisher:   publisher,
 		db:          db,
+		redis:       redis,
 	}
 }
 
@@ -169,6 +173,10 @@ func (s *OrderService) CreateOrder(
 	}
 
 	log.Println("transaction committed")
+
+	if err := s.redis.Del(ctx, "products").Err(); err != nil {
+		log.Printf("failed to clear products cache: %v", err)
+	}
 
 	log.Println("publishing order.created")
 
