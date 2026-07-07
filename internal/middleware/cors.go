@@ -1,15 +1,23 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	"os"
+)
 
 func CORSMiddleware(next http.Handler) http.Handler {
+	frontend := os.Getenv("FRONTEND_URL")
+
 	return http.HandlerFunc(func(
 		w http.ResponseWriter,
-		r *http.Request) {
-		w.Header().Set(
-			"Access-Control-Allow-Origin",
-			"http://localhost:5173",
-		)
+		r *http.Request,
+	) {
+		if frontend != "" {
+			w.Header().Set(
+				"Access-Control-Allow-Origin",
+				frontend,
+			)
+		}
 
 		w.Header().Set(
 			"Access-Control-Allow-Headers",
