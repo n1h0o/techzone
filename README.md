@@ -453,6 +453,12 @@ WHERE login = 'admin';
 
 ## Интерфейс
 
+### Демонстрация работы
+
+<p align="center">
+  <img src="docs/techzone.gif" width="100%">
+</p>
+
 ### Каталог
 
 ![Catalog](docs/catalog.png)

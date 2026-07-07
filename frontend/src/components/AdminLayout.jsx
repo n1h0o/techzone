@@ -7,17 +7,11 @@ function AdminLayout() {
       <h1>Админ-панель</h1>
 
       <nav className="admin-nav">
-        <Link to="/admin">
-          Dashboard
-        </Link>
 
         <Link to="/admin/products">
           Товары
         </Link>
-
-        <Link to="/admin/orders">
-          Заказы
-        </Link>
+        
       </nav>
 
       <Outlet />
