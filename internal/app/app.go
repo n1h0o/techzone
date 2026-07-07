@@ -11,6 +11,7 @@ import (
 	"techzone/internal/middleware"
 	"techzone/internal/payment"
 	"techzone/internal/repository"
+	"techzone/internal/seed"
 	"techzone/internal/service"
 	"techzone/pkg/kafka"
 	"techzone/pkg/postgres"
@@ -62,6 +63,9 @@ func NewServer(testMode bool) *App {
 	}
 
 	userRepo := repository.NewUserRepository(db)
+	if err := seed.CreateAdmin(userRepo); err != nil {
+		log.Fatal(err)
+	}
 
 	authService := service.NewAuthService(userRepo)
 
