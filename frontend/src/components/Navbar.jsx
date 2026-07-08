@@ -9,84 +9,147 @@ function Navbar() {
   const { cartCount, clearCart } = useCart();
 
   const navigate = useNavigate();
-
   const [menuOpen, setMenuOpen] = useState(false);
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
 
   function handleLogout() {
     logout();
     clearCart();
-    setMenuOpen(false);
+    closeMenu();
     navigate("/login");
-  }
-
-  function closeMenu() {
-    setMenuOpen(false);
   }
 
   return (
     <>
       <header className="navbar">
         <NavLink
-          className="logo"
           to="/"
+          className="logo"
           onClick={closeMenu}
         >
           🛍️ TechZone
         </NavLink>
 
+        <nav className="navbar-desktop">
+          <NavLink to="/products">
+            📦 Каталог
+          </NavLink>
+
+          {user && (
+            <>
+              <NavLink
+                to="/cart"
+                className="cart-link"
+              >
+                🛒 Корзина
+
+                {cartCount > 0 && (
+                  <span className="cart-badge">
+                    {cartCount}
+                  </span>
+                )}
+              </NavLink>
+
+              <NavLink to="/orders">
+                📋 Заказы
+              </NavLink>
+
+              <NavLink to="/notifications">
+                🔔 Уведомления
+              </NavLink>
+            </>
+          )}
+
+          {user?.role === "admin" && (
+            <NavLink to="/admin">
+              ⚙️ Админ
+            </NavLink>
+          )}
+        </nav>
+
+        <div className="navbar-user">
+          {!user ? (
+            <>
+              <NavLink to="/login">
+                Вход
+              </NavLink>
+
+              <NavLink to="/register">
+                Регистрация
+              </NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink to="/profile">
+                👤 {user.login}
+              </NavLink>
+
+              <button
+                className="logout-btn"
+                onClick={handleLogout}
+              >
+                Выйти
+              </button>
+            </>
+          )}
+        </div>
+
         <button
           className="burger"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() =>
+            setMenuOpen(!menuOpen)
+          }
         >
-          ☰
+          {menuOpen ? "✕" : "☰"}
         </button>
+      </header>
 
-        <div
-          className={`navbar-menu ${
-            menuOpen ? "active" : ""
-          }`}
+      <aside
+        className={`mobile-menu ${
+          menuOpen ? "open" : ""
+        }`}
+      >
+        <NavLink
+          to="/products"
+          onClick={closeMenu}
         >
-          <div className="navbar-left">
+          📦 Каталог
+        </NavLink>
+
+        {user && (
+          <>
             <NavLink
-              to="/products"
+              to="/cart"
               onClick={closeMenu}
             >
-              📦 Каталог
+              🛒 Корзина
             </NavLink>
 
-            {user && (
-              <>
-                <NavLink
-                  to="/cart"
-                  className="cart-link"
-                  onClick={closeMenu}
-                >
-                  🛒 Корзина
+            <NavLink
+              to="/orders"
+              onClick={closeMenu}
+            >
+              📋 Заказы
+            </NavLink>
 
-                  {cartCount > 0 && (
-                    <span className="cart-badge">
-                      {cartCount}
-                    </span>
-                  )}
-                </NavLink>
+            <NavLink
+              to="/notifications"
+              onClick={closeMenu}
+            >
+              🔔 Уведомления
+            </NavLink>
 
-                <NavLink
-                  to="/orders"
-                  onClick={closeMenu}
-                >
-                  📋 Заказы
-                </NavLink>
+            <NavLink
+              to="/profile"
+              onClick={closeMenu}
+            >
+              👤 Профиль
+            </NavLink>
 
-                <NavLink
-                  to="/notifications"
-                  onClick={closeMenu}
-                >
-                  🔔 Уведомления
-                </NavLink>
-              </>
-            )}
-
-            {user?.role === "admin" && (
+            {user.role === "admin" && (
               <NavLink
                 to="/admin"
                 onClick={closeMenu}
@@ -94,49 +157,38 @@ function Navbar() {
                 ⚙️ Админ
               </NavLink>
             )}
-          </div>
 
-          <div className="navbar-right">
-            {!user ? (
-              <>
-                <NavLink
-                  to="/login"
-                  onClick={closeMenu}
-                >
-                  Вход
-                </NavLink>
+            <button
+              className="logout-btn"
+              onClick={handleLogout}
+            >
+              Выйти
+            </button>
+          </>
+        )}
 
-                <NavLink
-                  to="/register"
-                  onClick={closeMenu}
-                >
-                  Регистрация
-                </NavLink>
-              </>
-            ) : (
-              <>
-                <NavLink
-                  to="/profile"
-                  onClick={closeMenu}
-                >
-                  👤 {user.login}
-                </NavLink>
+        {!user && (
+          <>
+            <NavLink
+              to="/login"
+              onClick={closeMenu}
+            >
+              Вход
+            </NavLink>
 
-                <button
-                  className="logout-btn"
-                  onClick={handleLogout}
-                >
-                  Выйти
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+            <NavLink
+              to="/register"
+              onClick={closeMenu}
+            >
+              Регистрация
+            </NavLink>
+          </>
+        )}
+      </aside>
 
       {menuOpen && (
         <div
-          className="navbar-overlay"
+          className="menu-backdrop"
           onClick={closeMenu}
         />
       )}

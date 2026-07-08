@@ -1,22 +1,20 @@
 package middleware
 
-import (
-	"net/http"
-	"os"
-)
+import "net/http"
 
 func CORSMiddleware(next http.Handler) http.Handler {
-	frontend := os.Getenv("FRONTEND_URL")
-
 	return http.HandlerFunc(func(
 		w http.ResponseWriter,
 		r *http.Request,
 	) {
-		if frontend != "" {
-			w.Header().Set(
-				"Access-Control-Allow-Origin",
-				frontend,
-			)
+
+		origin := r.Header.Get("Origin")
+
+		switch origin {
+		case "http://localhost:5173",
+			"https://techzone-phi.vercel.app":
+
+			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
 		w.Header().Set(
@@ -27,6 +25,11 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		w.Header().Set(
 			"Access-Control-Allow-Methods",
 			"GET, POST, PUT, PATCH, DELETE, OPTIONS",
+		)
+
+		w.Header().Set(
+			"Access-Control-Allow-Credentials",
+			"true",
 		)
 
 		if r.Method == http.MethodOptions {

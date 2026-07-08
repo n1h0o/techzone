@@ -626,103 +626,6 @@ tr:hover {
 
 }
 
-@media (max-width: 768px) {
-
-    /*  NAVBAR  */
-
-    .navbar {
-        flex-direction: column;
-        gap: 18px;
-        padding: 18px;
-    }
-
-    .navbar-left,
-    .navbar-right {
-        width: 100%;
-
-        justify-content: center;
-        flex-wrap: wrap;
-
-        gap: 14px;
-    }
-
-    .logo {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-
-    .username {
-        width: 100%;
-        text-align: center;
-    }
-
-    /* PRODUCTS  */
-
-    .products-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .product-card h2 {
-        min-height: auto;
-        font-size: 20px;
-    }
-
-    .description {
-        min-height: auto;
-    }
-
-    .product-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    /* PROFILE  */
-
-    .profile-card {
-        padding: 25px;
-    }
-
-    .profile-item {
-        flex-direction: column;
-        gap: 8px;
-        align-items: flex-start;
-    }
-
-    .profile-actions {
-        grid-template-columns: 1fr;
-    }
-
-    /* ADMIN */
-
-    .admin-actions {
-        flex-direction: column;
-    }
-
-    .admin-actions button {
-        width: 100%;
-    }
-
-    .admin-form {
-        width: 100%;
-    }
-
-    form {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    /*TABLE*/
-
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-
-}
-
 @media (max-width: 576px) {
 
     body {
@@ -782,89 +685,145 @@ tr:hover {
 }
 
 /*MOBILE BOTTOM NAVBAR*/
-.burger {
-    display: none;
-    font-size: 30px;
-    background: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
+
+.navbar-desktop{
+    display:flex;
+    align-items:center;
+    gap:22px;
 }
 
-.navbar-menu {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+.navbar-user{
+    display:flex;
+    align-items:center;
+    gap:18px;
 }
 
-.navbar-overlay {
-    display: none;
+.burger{
+    display:none;
+}
+
+.mobile-menu{
+    display:none;
+}
+
+.menu-backdrop{
+    display:none;
 }
 
 @media (max-width:768px){
 
     .navbar{
-        padding:16px 20px;
+
+        height:72px;
+
+        padding:0 20px;
+
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+
+    .navbar-desktop,
+    .navbar-user{
+        display:none;
     }
 
     .burger{
+
         display:block;
+
+        background:none;
+
+        border:none;
+
+        font-size:32px;
+
+        padding:0;
+
+        color:white;
     }
 
-    .navbar-menu{
+    .mobile-menu{
+
         position:fixed;
 
         top:0;
         right:-320px;
 
         width:280px;
+
         height:100vh;
 
         background:#111827;
 
         display:flex;
+
         flex-direction:column;
 
-        justify-content:flex-start;
-        align-items:flex-start;
-
-        gap:20px;
+        gap:18px;
 
         padding:90px 25px;
 
-        transition:.3s;
+        transition:right .3s;
 
-        z-index:999;
+        z-index:1001;
     }
 
-    .navbar-menu.active{
+    .mobile-menu.open{
+
         right:0;
     }
 
-    .navbar-left,
-    .navbar-right{
-        width:100%;
-        display:flex;
-        flex-direction:column;
-        align-items:flex-start;
-        gap:18px;
+    .mobile-menu a{
+
+        color:white;
+
+        text-decoration:none;
+
+        font-size:18px;
     }
 
-    .navbar a{
-        width:100%;
-        font-size:17px;
-    }
+    .mobile-menu button{
 
-    .logout-btn{
         width:100%;
     }
 
-    .navbar-overlay{
-        display:block;
+    .menu-backdrop{
+
         position:fixed;
+
         inset:0;
+
         background:rgba(0,0,0,.45);
-        z-index:998;
+
+        z-index:1000;
+
+        display:block;
     }
+
+    .products-grid{
+
+        grid-template-columns:1fr;
+    }
+
+    .profile-actions{
+
+        grid-template-columns:1fr;
+    }
+
+    .admin-actions{
+
+        flex-direction:column;
+    }
+
+    .admin-actions button{
+
+        width:100%;
+    }
+
+    form{
+
+        max-width:100%;
+    }
+
 }
