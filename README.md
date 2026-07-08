@@ -478,7 +478,6 @@ WHERE login = 'admin';
 ### Swagger
 
 ![Swagger](docs/swagger.png)
-```
 
 ---
 
