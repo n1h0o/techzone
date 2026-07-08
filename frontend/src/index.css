@@ -782,70 +782,89 @@ tr:hover {
 }
 
 /*MOBILE BOTTOM NAVBAR*/
+.burger {
+    display: none;
+    font-size: 30px;
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.navbar-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.navbar-overlay {
+    display: none;
+}
 
 @media (max-width:768px){
 
-    body{
-        padding-bottom:80px;
+    .navbar{
+        padding:16px 20px;
     }
 
-    .navbar{
+    .burger{
+        display:block;
+    }
 
+    .navbar-menu{
         position:fixed;
 
-        left:0;
-        right:0;
-        bottom:0;
-        top:auto;
+        top:0;
+        right:-320px;
 
-        padding:10px;
+        width:280px;
+        height:100vh;
 
-        border-top:1px solid #222;
-
-        flex-direction:row;
-
-        justify-content:space-around;
-
-        align-items:center;
-    }
-
-    .logo{
-        display:none;
-    }
-
-    .navbar-left,
-    .navbar-right{
-
-        width:auto;
-
-        gap:0;
-    }
-
-    .navbar-right{
-
-        margin-left:0;
-    }
-
-    .navbar a{
+        background:#111827;
 
         display:flex;
         flex-direction:column;
 
-        align-items:center;
+        justify-content:flex-start;
+        align-items:flex-start;
 
-        font-size:12px;
+        gap:20px;
 
-        gap:4px;
+        padding:90px 25px;
 
-        white-space:nowrap;
+        transition:.3s;
+
+        z-index:999;
+    }
+
+    .navbar-menu.active{
+        right:0;
+    }
+
+    .navbar-left,
+    .navbar-right{
+        width:100%;
+        display:flex;
+        flex-direction:column;
+        align-items:flex-start;
+        gap:18px;
+    }
+
+    .navbar a{
+        width:100%;
+        font-size:17px;
     }
 
     .logout-btn{
-        display:none;
+        width:100%;
     }
 
-    .username{
-        display:none;
+    .navbar-overlay{
+        display:block;
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.45);
+        z-index:998;
     }
-
 }

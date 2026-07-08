@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
@@ -9,86 +10,137 @@ function Navbar() {
 
   const navigate = useNavigate();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   function handleLogout() {
     logout();
     clearCart();
+    setMenuOpen(false);
     navigate("/login");
   }
 
-  return (
-    <header className="navbar">
+  function closeMenu() {
+    setMenuOpen(false);
+  }
 
-      <div className="navbar-left">
-        <NavLink className="logo" to="/">
+  return (
+    <>
+      <header className="navbar">
+        <NavLink
+          className="logo"
+          to="/"
+          onClick={closeMenu}
+        >
           🛍️ TechZone
         </NavLink>
 
-        <NavLink to="/products">
-          📦 Каталог
-        </NavLink>
+        <button
+          className="burger"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          ☰
+        </button>
 
-        {user && (
-          <>
+        <div
+          className={`navbar-menu ${
+            menuOpen ? "active" : ""
+          }`}
+        >
+          <div className="navbar-left">
             <NavLink
-              to="/cart"
-              className="cart-link"
+              to="/products"
+              onClick={closeMenu}
             >
-              🛒 Корзина
-
-              {cartCount > 0 && (
-                <span className="cart-badge">
-                  {cartCount}
-                </span>
-              )}
+              📦 Каталог
             </NavLink>
 
-            <NavLink to="/orders">
-              📋 Заказы
-            </NavLink>
+            {user && (
+              <>
+                <NavLink
+                  to="/cart"
+                  className="cart-link"
+                  onClick={closeMenu}
+                >
+                  🛒 Корзина
 
-            <NavLink to="/notifications">
-              🔔 Уведомления
-            </NavLink>
-          </>
-        )}
+                  {cartCount > 0 && (
+                    <span className="cart-badge">
+                      {cartCount}
+                    </span>
+                  )}
+                </NavLink>
 
-        {user?.role === "admin" && (
-          <NavLink to="/admin">
-            ⚙️ Админ
-          </NavLink>
-        )}
-      </div>
+                <NavLink
+                  to="/orders"
+                  onClick={closeMenu}
+                >
+                  📋 Заказы
+                </NavLink>
 
-      <div className="navbar-right">
+                <NavLink
+                  to="/notifications"
+                  onClick={closeMenu}
+                >
+                  🔔 Уведомления
+                </NavLink>
+              </>
+            )}
 
-        {!user ? (
-          <>
-            <NavLink to="/login">
-              Вход
-            </NavLink>
+            {user?.role === "admin" && (
+              <NavLink
+                to="/admin"
+                onClick={closeMenu}
+              >
+                ⚙️ Админ
+              </NavLink>
+            )}
+          </div>
 
-            <NavLink to="/register">
-              Регистрация
-            </NavLink>
-          </>
-        ) : (
-          <>
-            <NavLink to="/profile">
-              👤 {user.login}
-            </NavLink>
+          <div className="navbar-right">
+            {!user ? (
+              <>
+                <NavLink
+                  to="/login"
+                  onClick={closeMenu}
+                >
+                  Вход
+                </NavLink>
 
-            <button
-              className="logout-btn"
-              onClick={handleLogout}
-            >
-              Выйти
-            </button>
-          </>
-        )}
+                <NavLink
+                  to="/register"
+                  onClick={closeMenu}
+                >
+                  Регистрация
+                </NavLink>
+              </>
+            ) : (
+              <>
+                <NavLink
+                  to="/profile"
+                  onClick={closeMenu}
+                >
+                  👤 {user.login}
+                </NavLink>
 
-      </div>
+                <button
+                  className="logout-btn"
+                  onClick={handleLogout}
+                >
+                  Выйти
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
 
-    </header>
+      {menuOpen && (
+        <div
+          className="navbar-overlay"
+          onClick={closeMenu}
+        />
+      )}
+    </>
   );
 }
 
