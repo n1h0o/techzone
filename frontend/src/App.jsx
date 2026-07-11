@@ -15,7 +15,6 @@ import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
-import AdminPage from "./pages/AdminPage";
 import AdminLayout from "./components/AdminLayout";
 import AdminProductsPage from "./pages/AdminProductsPage";
 
@@ -48,10 +47,10 @@ function App() {
         <Route
           path="/cart"
           element={
-          <PrivateRoute>
-            <CartPage />
-          </PrivateRoute>
-        }
+            <PrivateRoute>
+              <CartPage />
+            </PrivateRoute>
+          }
         />
 
         <Route
@@ -60,52 +59,40 @@ function App() {
             <PrivateRoute>
               <OrdersPage />
             </PrivateRoute>
-        }
+          }
         />
 
         <Route
           path="/notifications"
           element={
-          <PrivateRoute>
-            <NotificationsPage />
-          </PrivateRoute>
-        }
+            <PrivateRoute>
+              <NotificationsPage />
+            </PrivateRoute>
+          }
         />
 
         <Route
-        path="/profile"
-        element={
-        <PrivateRoute>
-          <ProfilePage />
-        </PrivateRoute>
-        }
-        />
-
-        <Route
-    path="/admin"
-    element={
-        <AdminRoute>
-            <AdminLayout />
-        </AdminRoute>
-    }
->
-
-
-    <Route
-        path="products"
-        element={<AdminProductsPage />}
-    />
-
-        </Route>
-
-        <Route
-          path="/admin/products"
+          path="/profile"
           element={
-          <AdminRoute>
-            <AdminProductsPage />
-          </AdminRoute>
-        }
+            <PrivateRoute>
+              <ProfilePage />
+            </PrivateRoute>
+          }
         />
+
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
+          <Route
+            path="products"
+            element={<AdminProductsPage />}
+          />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

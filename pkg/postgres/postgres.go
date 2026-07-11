@@ -2,38 +2,35 @@ package postgres
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New() *pgxpool.Pool {
+func New() (*pgxpool.Pool, error) {
 
 	dbURL := os.Getenv("DB_URL")
-
-	log.Println("DB_URL =", dbURL)
-	log.Println("DATABASE_URL =", os.Getenv("DATABASE_URL"))
 
 	pool, err := pgxpool.New(
 		context.Background(),
 		dbURL,
 	)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	for i := 0; i < 10; i++ {
 		err = pool.Ping(context.Background())
 
 		if err == nil {
-			log.Println("postgres connected")
-			return pool
+			return pool, nil
 		}
-		log.Printf("waiting postgres...(%d/10)", i+1)
 		time.Sleep(500 * time.Millisecond)
 	}
-	log.Fatalf("postgres connection failed: %v", err)
-	return nil
+
+	pool.Close()
+
+	return nil, fmt.Errorf("postgres connection failed: %w", err)
 }

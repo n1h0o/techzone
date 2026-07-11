@@ -1,15 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import api from "../api/api";
 
 function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
-    loadNotifications();
-  }, []);
-
-  async function loadNotifications() {
+  const loadNotifications = useCallback(async () => {
     try {
       const res = await api.get("/notifications");
 
@@ -18,7 +14,15 @@ function NotificationsPage() {
       console.error(err);
       toast.error("Не удалось загрузить уведомления");
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadNotifications();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadNotifications]);
 
   return (
     <div className="container">

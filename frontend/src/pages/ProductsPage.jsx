@@ -1,19 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import api from "../api/api";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/useCart";
 
 function ProductsPage() {
   const [products, setProducts] = useState([]);
 
   const { refreshCart } = useCart();
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     try {
       const res = await api.get("/products");
       setProducts(res.data);
@@ -21,7 +17,15 @@ function ProductsPage() {
       console.error(err);
       toast.error("Не удалось загрузить товары");
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadProducts();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadProducts]);
 
   async function addToCart(productId) {
     const token = localStorage.getItem("token");

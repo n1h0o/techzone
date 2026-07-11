@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import api from "../api/api";
 import { toast } from "sonner";
 
@@ -17,11 +17,7 @@ function AdminProductsPage() {
   const [stock, setStock] = useState("");
   const [imageURL, setImageURL] = useState("");
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     try {
       const res = await api.get("/admin/products");
       setProducts(res.data);
@@ -29,7 +25,15 @@ function AdminProductsPage() {
       console.error(err);
       toast.error("Не удалось загрузить товары");
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadProducts();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadProducts]);
 
   function clearForm() {
     setEditingId(null);

@@ -1,17 +1,16 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import api from "../api/api";
-
-const AuthContext = createContext(null);
+import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  async function loadUser() {
+  const loadUser = useCallback(async () => {
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -35,7 +34,15 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadUser();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadUser]);
 
   function logout() {
     localStorage.removeItem("token");
@@ -48,13 +55,10 @@ export function AuthProvider({ children }) {
         user,
         setUser,
         logout,
+        loadUser,
       }}
     >
       {!loading && children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }

@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"techzone/internal/app"
 	"testing"
 	"time"
 )
@@ -15,7 +14,7 @@ import (
 func TestRegister(t *testing.T) {
 
 	server := httptest.NewServer(
-		app.NewServer(true).Handler(),
+		mustNewTestApp(t).Handler(),
 	)
 
 	defer server.Close()

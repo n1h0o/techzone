@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"techzone/internal/app"
 	"techzone/internal/model"
 	"testing"
 
@@ -294,7 +293,7 @@ func TestPaymentIdempotency(t *testing.T) {
 	createAdmin(t)
 
 	server := httptest.NewServer(
-		app.NewServer(true).Handler(),
+		mustNewTestApp(t).Handler(),
 	)
 	defer server.Close()
 

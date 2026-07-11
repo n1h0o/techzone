@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import api from "../api/api";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/useCart";
 
 function CartPage() {
   const [items, setItems] = useState([]);
@@ -15,11 +15,7 @@ function CartPage() {
     refreshCart,
   } = useCart();
 
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  async function loadCart() {
+  const loadCart = useCallback(async () => {
     try {
       const res = await api.get("/cart");
 
@@ -30,7 +26,15 @@ function CartPage() {
       console.error(err);
       toast.error("Не удалось загрузить корзину");
     }
-  }
+  }, [refreshCart]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadCart();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadCart]);
 
   async function removeItem(item) {
     try {

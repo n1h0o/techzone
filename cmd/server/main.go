@@ -28,7 +28,10 @@ func main() {
 
 	_ = godotenv.Load()
 
-	application := app.NewServer(false)
+	application, err := app.NewServer(false)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer application.Close()
 
 	port := os.Getenv("PORT")

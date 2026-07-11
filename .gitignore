@@ -1,1 +1,40 @@
+# Environment
 .env
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+server
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Build
+dist/
+build/
+
+# Docker
+*.pid
+
+# Temporary
+tmp/
+temp/

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -52,36 +53,138 @@ type App struct {
 	cancel context.CancelFunc
 }
 
-func NewServer(testMode bool) *App {
+type ServerOptions struct {
+	TestMode  bool
+	SeedAdmin bool
+}
 
+type Dependencies struct {
+	Config         *config.Config
+	DB             *pgxpool.Pool
+	RedisClient    *goredis.Client
+	EventPublisher service.EventPublisher
+	PaymentGateway payment.Gateway
+	ProducerClient *kgo.Client
+	ConsumerClient *kgo.Client
+	Cancel         context.CancelFunc
+	SeedAdmin      bool
+}
+
+func NewServer(testMode bool) (*App, error) {
+	return NewServerWithOptions(ServerOptions{
+		TestMode:  testMode,
+		SeedAdmin: true,
+	})
+}
+
+func NewServerWithOptions(
+	options ServerOptions,
+) (*App, error) {
+	deps, err := BuildDependencies(options)
+	if err != nil {
+		return nil, err
+	}
+
+	app, err := NewWithDependencies(deps)
+	if err != nil {
+		closeDependencies(deps)
+		return nil, err
+	}
+
+	return app, nil
+}
+
+func BuildDependencies(
+	options ServerOptions,
+) (*Dependencies, error) {
 	cfg := config.Load()
-	db := postgres.New()
+	db, err := postgres.New()
+	if err != nil {
+		return nil, err
+	}
 
 	redisClient, err := redis.New()
 	if err != nil {
-		log.Fatal(err)
+		db.Close()
+		return nil, err
 	}
 
-	userRepo := repository.NewUserRepository(db)
-	if err := seed.CreateAdmin(userRepo); err != nil {
-		log.Fatal(err)
+	deps := &Dependencies{
+		Config:         cfg,
+		DB:             db,
+		RedisClient:    redisClient,
+		EventPublisher: MockPublisher{},
+		PaymentGateway: payment.NewMockGateway(),
+		SeedAdmin:      options.SeedAdmin,
+	}
+
+	if options.TestMode || os.Getenv("KAFKA_BROKERS") == "" {
+		return deps, nil
+	}
+
+	producerClient, err := kafka.NewProducerClient()
+	if err != nil {
+		closeDependencies(deps)
+		return nil, err
+	}
+
+	consumerClient, err := kafka.NewConsumerClient()
+	if err != nil {
+		producerClient.Close()
+		closeDependencies(deps)
+		return nil, err
+	}
+
+	deps.EventPublisher = kafka.NewProducer(producerClient)
+	deps.ProducerClient = producerClient
+	deps.ConsumerClient = consumerClient
+
+	return deps, nil
+}
+
+func NewWithDependencies(
+	deps *Dependencies,
+) (*App, error) {
+	if deps == nil {
+		return nil, errors.New("dependencies are nil")
+	}
+	if deps.Config == nil {
+		return nil, errors.New("config is nil")
+	}
+	if deps.DB == nil {
+		return nil, errors.New("db is nil")
+	}
+	if deps.RedisClient == nil {
+		return nil, errors.New("redis client is nil")
+	}
+	if deps.EventPublisher == nil {
+		return nil, errors.New("event publisher is nil")
+	}
+	if deps.PaymentGateway == nil {
+		return nil, errors.New("payment gateway is nil")
+	}
+
+	userRepo := repository.NewUserRepository(deps.DB)
+	if deps.SeedAdmin {
+		if err := seed.CreateAdmin(userRepo); err != nil {
+			return nil, err
+		}
 	}
 
 	authService := service.NewAuthService(userRepo)
+	authHandler := handler.NewAuthHandler(authService, deps.Config)
 
-	authHandler := handler.NewAuthHandler(authService, cfg)
-
-	productRepo := repository.NewProductRepository(db)
-	productService := service.NewProductService(productRepo, redisClient)
+	productRepo := repository.NewProductRepository(deps.DB)
+	productService := service.NewProductService(productRepo, deps.RedisClient)
 	productHandler := handler.NewProductHandler(productService)
 
-	cartRepo := repository.NewCartRepository(db)
+	cartRepo := repository.NewCartRepository(deps.DB)
 	cartService := service.NewCartService(cartRepo)
 	cartHandler := handler.NewCartHandler(cartService)
 
-	orderRepo := repository.NewOrderRepository(db)
+	orderRepo := repository.NewOrderRepository(deps.DB)
 	notificationRepo := repository.NewNotificationRepository(
-		db,
+		deps.DB,
 	)
 	notificationService := service.NewNotificationService(
 		notificationRepo,
@@ -94,47 +197,33 @@ func NewServer(testMode bool) *App {
 		notificationService,
 	)
 
-	var producer service.EventPublisher
-
-	var producerClient *kgo.Client
-	var consumerClient *kgo.Client
-	var cancel context.CancelFunc
-
-	gateway := payment.NewMockGateway()
-
-	if testMode || os.Getenv("KAFKA_BROKERS") == "" {
-
-		producer = MockPublisher{}
-
-	} else {
-
-		producerClient, err = kafka.NewProducerClient()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		consumerClient, err = kafka.NewConsumerClient()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		producer = kafka.NewProducer(producerClient)
-
+	if deps.ConsumerClient != nil {
 		consumer := kafka.NewConsumer(
-			consumerClient,
+			deps.ConsumerClient,
 			notificationPool,
 		)
 
-		ctx, c := context.WithCancel(context.Background())
-		cancel = c
+		ctx, cancel := context.WithCancel(context.Background())
+		deps.Cancel = cancel
 
 		go consumer.Start(ctx)
 	}
 
-	orderService := service.NewOrderService(orderRepo, cartRepo, productRepo, producer, db, redisClient)
+	orderService := service.NewOrderService(
+		orderRepo,
+		cartRepo,
+		productRepo,
+		deps.EventPublisher,
+		deps.DB,
+		deps.RedisClient,
+	)
 	orderHandler := handler.NewOrderHandler(orderService)
 
-	paymentService := service.NewPaymentService(gateway, producer, db)
+	paymentService := service.NewPaymentService(
+		deps.PaymentGateway,
+		deps.EventPublisher,
+		deps.DB,
+	)
 	paymentHandler := handler.NewPaymentHandler(paymentService)
 	mux := http.NewServeMux()
 
@@ -142,7 +231,7 @@ func NewServer(testMode bool) *App {
 	mux.HandleFunc("POST /login", authHandler.Login)
 	mux.Handle(
 		"GET /me",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(
 				handler.GetMe,
 			),
@@ -151,7 +240,7 @@ func NewServer(testMode bool) *App {
 	mux.HandleFunc("GET /products", productHandler.GetProducts)
 	mux.Handle(
 		"GET /admin/products",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			middleware.AdminMiddleware(
 				http.HandlerFunc(
 					productHandler.GetProductsForAdmin,
@@ -161,7 +250,7 @@ func NewServer(testMode bool) *App {
 	)
 	mux.Handle(
 		"POST /products",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			middleware.AdminMiddleware(
 				http.HandlerFunc(
 					productHandler.CreateProduct,
@@ -171,7 +260,7 @@ func NewServer(testMode bool) *App {
 	)
 	mux.Handle(
 		"PUT /products/{id}",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			middleware.AdminMiddleware(
 				http.HandlerFunc(productHandler.UpdateProduct),
 			),
@@ -179,7 +268,7 @@ func NewServer(testMode bool) *App {
 	)
 	mux.Handle(
 		"PATCH /products/{id}/status",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			middleware.AdminMiddleware(
 				http.HandlerFunc(productHandler.SetProductStatus),
 			),
@@ -189,7 +278,7 @@ func NewServer(testMode bool) *App {
 	mux.HandleFunc("GET /products/{id}", productHandler.GetProduct)
 	mux.Handle(
 		"POST /cart/items",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(
 				cartHandler.AddToCart,
 			),
@@ -197,13 +286,13 @@ func NewServer(testMode bool) *App {
 	)
 	mux.Handle(
 		"GET /cart",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(cartHandler.GetCart),
 		),
 	)
 	mux.Handle(
 		"DELETE /cart/items/{item_id}",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(
 				cartHandler.DeleteItem,
 			),
@@ -212,33 +301,33 @@ func NewServer(testMode bool) *App {
 
 	mux.Handle(
 		"POST /orders",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(orderHandler.CreateOrder),
 		),
 	)
 	mux.Handle(
 		"GET /orders",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(orderHandler.GetOrders),
 		),
 	)
 	mux.Handle(
 		"GET /orders/{id}",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(orderHandler.GetOrderByID),
 		),
 	)
 
 	mux.Handle(
 		"PATCH /orders/{id}/status",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(orderHandler.UpdateStatus),
 		),
 	)
 
 	mux.Handle(
 		"GET /notifications",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(
 				notificationHandler.GetNotifications,
 			),
@@ -247,7 +336,7 @@ func NewServer(testMode bool) *App {
 
 	mux.Handle(
 		"POST /payments",
-		middleware.AuthMiddleware(cfg)(
+		middleware.AuthMiddleware(deps.Config)(
 			http.HandlerFunc(paymentHandler.Pay),
 		),
 	)
@@ -262,16 +351,44 @@ func NewServer(testMode bool) *App {
 	return &App{
 		handler: handlerWithCors,
 
-		db: db,
+		db: deps.DB,
 
-		redisClient: redisClient,
+		redisClient: deps.RedisClient,
 
-		producerClient: producerClient,
-		consumerClient: consumerClient,
+		producerClient: deps.ProducerClient,
+		consumerClient: deps.ConsumerClient,
 
-		cancel: cancel,
+		cancel: deps.Cancel,
+	}, nil
+
+}
+
+func closeDependencies(deps *Dependencies) {
+	if deps == nil {
+		return
 	}
 
+	if deps.Cancel != nil {
+		deps.Cancel()
+	}
+
+	if deps.ConsumerClient != nil {
+		deps.ConsumerClient.Close()
+	}
+
+	if deps.ProducerClient != nil {
+		deps.ProducerClient.Close()
+	}
+
+	if deps.RedisClient != nil {
+		if err := deps.RedisClient.Close(); err != nil {
+			log.Printf("failed to close redis client: %v", err)
+		}
+	}
+
+	if deps.DB != nil {
+		deps.DB.Close()
+	}
 }
 
 func (a *App) Handler() http.Handler {
