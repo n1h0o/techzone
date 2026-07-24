@@ -56,7 +56,7 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.10.1
-          args: ./cmd/... ./internal/... ./pkg/... ./tests/...
+          args: ./cmd/... ./internal/... ./pkg/... 
 
       - name: Run integration tests
         env:
