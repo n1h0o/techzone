@@ -11,6 +11,7 @@ type OrderRepository struct {
 	db dbtx.DBTX
 }
 
+// создает репозиторий заказов поверх пула или транзакции
 func NewOrderRepository(
 	db dbtx.DBTX,
 ) *OrderRepository {
@@ -19,6 +20,7 @@ func NewOrderRepository(
 	}
 }
 
+// создает заказ и возвращает его идентификатор
 func (r *OrderRepository) Create(
 	ctx context.Context,
 	order *model.Order,
@@ -45,6 +47,7 @@ func (r *OrderRepository) Create(
 	return id, nil
 }
 
+// добавляет позицию в состав заказа
 func (r *OrderRepository) CreateItem(
 	ctx context.Context,
 	item *model.OrderItem,
@@ -71,6 +74,7 @@ func (r *OrderRepository) CreateItem(
 	return nil
 }
 
+// возвращает список заказов пользователя с информацией об оплате
 func (r *OrderRepository) GetByUserID(
 	ctx context.Context,
 	userID int64,
@@ -116,6 +120,7 @@ func (r *OrderRepository) GetByUserID(
 	return orders, nil
 }
 
+// возвращает заказ только владельцу
 func (r *OrderRepository) GetByID(
 	ctx context.Context,
 	orderID int64,
@@ -152,6 +157,7 @@ func (r *OrderRepository) GetByID(
 	return &order, nil
 }
 
+// возвращает заказ без проверки владельца для админских операций
 func (r *OrderRepository) GetByIDForAdmin(
 	ctx context.Context,
 	orderID int64,
@@ -185,6 +191,7 @@ func (r *OrderRepository) GetByIDForAdmin(
 	return &order, nil
 }
 
+// возвращает позиции заказа
 func (r *OrderRepository) GetItems(
 	ctx context.Context,
 	orderID int64,
@@ -230,6 +237,7 @@ func (r *OrderRepository) GetItems(
 	return items, nil
 }
 
+// меняет статус заказа по идентификатору
 func (r *OrderRepository) UpdateStatus(
 	ctx context.Context,
 	orderID int64,
@@ -257,6 +265,7 @@ func (r *OrderRepository) UpdateStatus(
 	return nil
 }
 
+// берет строку заказа на блокировку во время оплаты
 func (r *OrderRepository) LockOrder(
 	ctx context.Context,
 	orderID int64,

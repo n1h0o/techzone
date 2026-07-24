@@ -52,6 +52,7 @@ type OrderRepository interface {
 	) error
 }
 
+// координирует транзакцию заказа и побочные действия после коммита
 type OrderService struct {
 	orderRepo   OrderRepository
 	cartRepo    CartRepository
@@ -61,6 +62,7 @@ type OrderService struct {
 	redis       *redis.Client
 }
 
+// создает сервис заказов
 func NewOrderService(
 	orderRepo OrderRepository,
 	cartRepo CartRepository,
@@ -84,6 +86,7 @@ type OrderDetails struct {
 	Items []model.OrderItemInfo `json:"items"`
 }
 
+// собирает заказ из корзины в одной транзакции
 func (s *OrderService) CreateOrder(
 	ctx context.Context,
 	userID int64,
@@ -180,6 +183,7 @@ func (s *OrderService) CreateOrder(
 
 	log.Println("transaction committed")
 
+	// кэш каталога очищается уже после коммита чтобы не открыть окно несогласованности
 	if err := s.redis.Del(ctx, "products").Err(); err != nil {
 		log.Printf("failed to clear products cache: %v", err)
 	}
@@ -211,6 +215,7 @@ func (s *OrderService) CreateOrder(
 	return orderID, nil
 }
 
+// возвращает список заказов пользователя
 func (s *OrderService) GetOrders(
 	ctx context.Context,
 	userID int64,
@@ -220,6 +225,7 @@ func (s *OrderService) GetOrders(
 	)
 }
 
+// возвращает заказ и связанные позиции одним ответом
 func (s *OrderService) GetOrder(
 	ctx context.Context,
 	userID int64,
@@ -247,6 +253,7 @@ func (s *OrderService) GetOrder(
 	}, nil
 }
 
+// валидирует переходы статусов и поддерживает отдельный режим для админа
 func (s *OrderService) UpdateStatus(
 	ctx context.Context,
 	orderID int64,

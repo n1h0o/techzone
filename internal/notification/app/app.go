@@ -24,6 +24,7 @@ import (
 )
 
 type App struct {
+	// хранит долгоживущие зависимости notification сервиса
 	grpcServer *grpc.Server
 
 	config *config.Config
@@ -38,6 +39,7 @@ type App struct {
 	cancel context.CancelFunc
 }
 
+// собирает зависимости notification сервиса отдельно от основного api
 type Dependencies struct {
 	Config         *config.Config
 	DB             *pgxpool.Pool
@@ -45,6 +47,7 @@ type Dependencies struct {
 	Cancel         context.CancelFunc
 }
 
+// поднимает зависимости notification сервиса
 func BuildDependencies() (*Dependencies, error) {
 	cfg := config.Load()
 
@@ -65,6 +68,8 @@ func BuildDependencies() (*Dependencies, error) {
 		ConsumerClient: consumerClient,
 	}, nil
 }
+
+// связывает зависимости с grpc сервером и kafka consumer
 func New(
 	deps *Dependencies,
 ) (*App, error) {
@@ -112,6 +117,7 @@ func New(
 	}, nil
 }
 
+// освобождает долгоживущие ресурсы notification сервиса
 func (a *App) Close() {
 
 	if a.cancel != nil {
@@ -125,6 +131,7 @@ func (a *App) Close() {
 	}
 }
 
+// запускает grpc сервер и sidecar метрики
 func (a *App) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -139,6 +146,7 @@ func (a *App) Run() error {
 	go func() {
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
+		// отдельный http сервер для метрик не мешает grpc трафику
 		metricsServer := &http.Server{
 			Addr:              ":9091",
 			Handler:           mux,

@@ -8,6 +8,7 @@ import (
 	"techzone/pkg/jwt"
 )
 
+// проверяет bearer токен и кладет claims в контекст запроса
 func AuthMiddleware(
 	cfg *config.Config,
 ) func(http.Handler) http.Handler {
@@ -27,6 +28,8 @@ func AuthMiddleware(
 					return
 				}
 				tokenString := parts[1]
+
+				// разбирает токен один раз чтобы downstream код работал только с claims
 				claims, err := jwt.ParseToken(
 					tokenString,
 					cfg.JWTSecret,

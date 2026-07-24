@@ -5,6 +5,7 @@ import (
 	"techzone/pkg/jwt"
 )
 
+// пропускает дальше только администраторов
 func AdminMiddleware(
 	next http.Handler,
 ) http.Handler {

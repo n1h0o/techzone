@@ -23,10 +23,12 @@ type UserRepository interface {
 	) (int64, error)
 }
 
+// инкапсулирует сценарии регистрации и входа
 type AuthService struct {
 	userRepo UserRepository
 }
 
+// создает auth сервис поверх пользовательского репозитория
 func NewAuthService(
 	userRepo UserRepository,
 ) *AuthService {
@@ -35,6 +37,7 @@ func NewAuthService(
 	}
 }
 
+// валидирует вход и создает пользователя с захешированным паролем
 func (s *AuthService) Register(
 	ctx context.Context,
 	input RegisterInput,
@@ -89,6 +92,7 @@ func (s *AuthService) Register(
 	return nil
 }
 
+// проверяет логин и пароль и возвращает пользователя для выдачи токена
 func (s *AuthService) Login(
 	ctx context.Context,
 	input LoginInput,

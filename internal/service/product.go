@@ -49,11 +49,13 @@ type ProductRepository interface {
 	) ([]model.Product, error)
 }
 
+// инкапсулирует правила каталога и слой кэширования
 type ProductService struct {
 	productRepo ProductRepository
 	redis       *redis.Client
 }
 
+// создает сервис каталога
 func NewProductService(
 	productRepo ProductRepository,
 	redis *redis.Client,
@@ -64,6 +66,7 @@ func NewProductService(
 	}
 }
 
+// валидирует данные товара и сбрасывает кэш после записи
 func (s *ProductService) CreateProduct(
 	ctx context.Context,
 	input CreateProductInput,
@@ -110,6 +113,7 @@ func (s *ProductService) CreateProduct(
 	return productID, nil
 }
 
+// возвращает один активный товар
 func (s *ProductService) GetProduct(
 	ctx context.Context,
 	id int64,
@@ -117,6 +121,7 @@ func (s *ProductService) GetProduct(
 	return s.productRepo.GetByID(ctx, id)
 }
 
+// сначала читает каталог из кэша и только потом идет в postgres
 func (s *ProductService) GetProducts(
 	ctx context.Context,
 ) ([]model.Product, error) {
@@ -143,6 +148,7 @@ func (s *ProductService) GetProducts(
 
 	bytes, err := json.Marshal(products)
 	if err == nil {
+		// короткий ttl позволяет пережить редкие промахи инвалидции
 		_ = s.redis.Set(
 			ctx,
 			"products",
@@ -155,12 +161,14 @@ func (s *ProductService) GetProducts(
 	return products, nil
 }
 
+// отдает полный каталог для админки без фильтра по активности
 func (s *ProductService) GetProductsForAdmin(
 	ctx context.Context,
 ) ([]model.Product, error) {
 	return s.productRepo.GetAllForAdmin(ctx)
 }
 
+// обновляет товар и инвалидирует общий список каталога
 func (s *ProductService) UpdateProduct(
 	ctx context.Context,
 	productID int64,
@@ -207,6 +215,7 @@ func (s *ProductService) UpdateProduct(
 	return nil
 }
 
+// меняет флаг активности и сбрасывает кэш каталога
 func (s *ProductService) SetProductStatus(
 	ctx context.Context,
 	productID int64,

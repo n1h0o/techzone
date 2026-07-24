@@ -11,6 +11,7 @@ type PaymentRepository struct {
 	db dbtx.DBTX
 }
 
+// создает репозиторий оплат поверх пула или транзакции
 func NewPaymentRepository(
 	db dbtx.DBTX,
 ) *PaymentRepository {
@@ -19,6 +20,7 @@ func NewPaymentRepository(
 	}
 }
 
+// создает запись оплаты и возвращает ее идентификатор
 func (r *PaymentRepository) Create(
 	ctx context.Context,
 	payment *model.Payment,
@@ -56,6 +58,7 @@ func (r *PaymentRepository) Create(
 
 }
 
+// ищет оплату по ключу идемпотентности
 func (r *PaymentRepository) GetByIdempotencyKey(
 	ctx context.Context,
 	key string,
@@ -96,6 +99,7 @@ func (r *PaymentRepository) GetByIdempotencyKey(
 
 }
 
+// возвращает оплату по идентификатору
 func (r *PaymentRepository) GetByID(
 	ctx context.Context,
 	id int64,
@@ -134,6 +138,7 @@ func (r *PaymentRepository) GetByID(
 	return &payment, nil
 }
 
+// обновляет статус оплаты после ответа платежного шлюза
 func (r *PaymentRepository) UpdateStatus(
 	ctx context.Context,
 	id int64,
@@ -166,6 +171,7 @@ func (r *PaymentRepository) UpdateStatus(
 	return nil
 }
 
+// возвращает успешную оплату заказа если она уже была завершена ранее
 func (r *PaymentRepository) GetByOrderID(
 	ctx context.Context,
 	orderID int64,

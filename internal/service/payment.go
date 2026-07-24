@@ -57,6 +57,7 @@ type PaymentService struct {
 	db *pgxpool.Pool
 }
 
+// создает сервис оплаты поверх шлюза и publisher слоя
 func NewPaymentService(
 	gateway payment.Gateway,
 	publisher EventPublisher,
@@ -69,6 +70,7 @@ func NewPaymentService(
 	}
 }
 
+// ищет уже существующую оплату чтобы сохранить идемпотентность повтора
 func (s *PaymentService) findExistingPayment(
 	ctx context.Context,
 	repo PaymentRepository,
@@ -92,6 +94,7 @@ func (s *PaymentService) findExistingPayment(
 	)
 }
 
+// создает pending запись до обращения к внешнему шлюзу
 func (s *PaymentService) createPayment(
 	ctx context.Context,
 	repo PaymentRepository,
@@ -122,6 +125,7 @@ func (s *PaymentService) createPayment(
 	return payment, nil
 }
 
+// синхронизирует ответ шлюза со статусом в базе
 func (s *PaymentService) processGateway(
 	ctx context.Context,
 	repo PaymentRepository,
@@ -181,6 +185,7 @@ func (s *PaymentService) processGateway(
 	return err
 }
 
+// проводит оплату в транзакции и публикует событие только после коммита
 func (s *PaymentService) Pay(
 	ctx context.Context,
 	userID int64,
@@ -206,6 +211,7 @@ func (s *PaymentService) Pay(
 	orderRepo := repository.NewOrderRepository(tx)
 
 	if err := orderRepo.LockOrder(ctx, orderID); err != nil {
+		// блокировка не дает конкурентным запросам создать две оплаты на один заказ
 		return nil, err
 	}
 

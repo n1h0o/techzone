@@ -6,6 +6,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+// создает клиент только для публикации событий
 func NewProducerClient() (*kgo.Client, error) {
 	return kgo.NewClient(
 		kgo.SeedBrokers(
@@ -14,6 +15,7 @@ func NewProducerClient() (*kgo.Client, error) {
 	)
 }
 
+// создает consumer клиента для notification сервиса
 func NewConsumerClient() (*kgo.Client, error) {
 	return kgo.NewClient(
 		kgo.SeedBrokers(

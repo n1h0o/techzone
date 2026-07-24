@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// создает пул и несколько раз пингует базу пока контейнер не станет готов
 func New(dbURL string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {

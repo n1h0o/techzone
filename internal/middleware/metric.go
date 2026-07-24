@@ -12,14 +12,16 @@ type responseWriter struct {
 	status int
 }
 
+// запоминает итоговый статус чтобы метрики считались по фактическому ответу
 func (rw *responseWriter) WriteHeader(status int) {
 	rw.status = status
 	rw.ResponseWriter.WriteHeader(status)
 }
 
+// пишет длительность запроса в prometheus после ответа обработчика
 func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		// используем pattern чтобы не раздувать кардинальность метрик сырими путями
 		pattern := r.Pattern
 		if pattern == "" {
 			pattern = "unknown"

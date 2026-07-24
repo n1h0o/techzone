@@ -43,6 +43,7 @@ func (MockPublisher) PublishPaymentCompleted(
 }
 
 type App struct {
+	// хранит внешние клиенты чтобы их можно было закрыть при остановке
 	notificationClient *notificationgrpc.Client
 
 	handler http.Handler
@@ -57,11 +58,13 @@ type App struct {
 	cancel context.CancelFunc
 }
 
+// управляет тем как поднимается приложение в обычном режиме и в тестах
 type ServerOptions struct {
 	TestMode  bool
 	SeedAdmin bool
 }
 
+// собирает зависимости до создания http маршрутов
 type Dependencies struct {
 	NotificationClient *notificationgrpc.Client
 	Config             *config.Config
@@ -75,6 +78,7 @@ type Dependencies struct {
 	SeedAdmin          bool
 }
 
+// создает сервер с настройками по умолчанию
 func NewServer(testMode bool) (*App, error) {
 	return NewServerWithOptions(ServerOptions{
 		TestMode:  testMode,
@@ -82,6 +86,7 @@ func NewServer(testMode bool) (*App, error) {
 	})
 }
 
+// создает сервер с явными опциями для тестов и запуска
 func NewServerWithOptions(
 	options ServerOptions,
 ) (*App, error) {
@@ -99,6 +104,7 @@ func NewServerWithOptions(
 	return app, nil
 }
 
+// поднимает базовые зависимости приложения
 func BuildDependencies(
 	options ServerOptions,
 ) (*Dependencies, error) {
@@ -117,15 +123,23 @@ func BuildDependencies(
 
 	notificationClient, err := notificationgrpc.New(cfg.NotificationGRPCAddr)
 	if err != nil {
-		redisClient.Close()
+		if err := redisClient.Close(); err != nil {
+			log.Printf("failed to close redis client: %v", err)
+		}
 		db.Close()
 		return nil, err
 	}
 
 	producerClient, err := pkg.NewProducerClient()
 	if err != nil {
-		notificationClient.Close()
-		redisClient.Close()
+		if err := notificationClient.Close(); err != nil {
+			log.Printf("failed to close notification client: %v", err)
+		}
+
+		if err := redisClient.Close(); err != nil {
+			log.Printf("failed to close redis client: %v", err)
+		}
+
 		db.Close()
 		return nil, err
 	}
@@ -144,12 +158,14 @@ func BuildDependencies(
 	}
 
 	if options.TestMode || os.Getenv("KAFKA_BROKERS") == "" {
+		// в тестах и локальных режимах без kafka сервер поднимается без consumer части
 		return deps, nil
 	}
 
 	return deps, nil
 }
 
+// связывает зависимости со слоями приложения и маршрутизатором
 func NewWithDependencies(
 	deps *Dependencies,
 ) (*App, error) {
@@ -215,6 +231,7 @@ func NewWithDependencies(
 	paymentHandler := handler.NewPaymentHandler(paymentService)
 	mux := http.NewServeMux()
 
+	// здесь концентрируется весь http контракт сервиса
 	mux.HandleFunc("POST /register", authHandler.Register)
 	mux.HandleFunc("POST /login", authHandler.Login)
 	mux.Handle(
@@ -358,13 +375,14 @@ func NewWithDependencies(
 
 }
 
+// закрывает зависимости если сборка сервера оборвалась на полпути
 func closeDependencies(deps *Dependencies) {
 	if deps == nil {
 		return
 	}
 
-	if deps.NotificationClient != nil {
-		_ = deps.NotificationClient.Close()
+	if err := deps.NotificationClient.Close(); err != nil {
+		log.Printf("failed to close notification client: %v", err)
 	}
 
 	if deps.Cancel != nil {
@@ -390,18 +408,20 @@ func closeDependencies(deps *Dependencies) {
 	}
 }
 
+// возвращает готовый http обработчик для запуска сервера
 func (a *App) Handler() http.Handler {
 	return a.handler
 }
 
+// освобождает внешние ресурсы приложения
 func (a *App) Close() {
 
 	if a.cancel != nil {
 		a.cancel()
 	}
 
-	if a.notificationClient != nil {
-		_ = a.notificationClient.Close()
+	if err := a.notificationClient.Close(); err != nil {
+		log.Printf("failed to close notification client: %v", err)
 	}
 
 	if a.consumerClient != nil {

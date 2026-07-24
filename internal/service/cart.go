@@ -38,10 +38,12 @@ type CartRepository interface {
 	) error
 }
 
+// работает только с бизнес логикой корзины без знания о транспорте
 type CartService struct {
 	cartRepo CartRepository
 }
 
+// создает сервис корзины
 func NewCartService(
 	cartRepo CartRepository,
 ) *CartService {
@@ -50,6 +52,7 @@ func NewCartService(
 	}
 }
 
+// создает корзину по требованию и добавляет товар в один сценарий
 func (s *CartService) AddToCart(
 	ctx context.Context,
 	userID int64,
@@ -99,6 +102,7 @@ func (s *CartService) AddToCart(
 
 }
 
+// возвращает пустой список если корзина еще не создана
 func (s *CartService) GetCart(
 	ctx context.Context,
 	userID int64,
@@ -120,6 +124,7 @@ func (s *CartService) GetCart(
 	)
 }
 
+// удаляет позицию только из корзины текущего пользователя
 func (s *CartService) DeleteItem(
 	ctx context.Context,
 	userID int64,

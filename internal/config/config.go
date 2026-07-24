@@ -9,11 +9,14 @@ import (
 )
 
 type Config struct {
+	// хранит готовую строку подключения если она приходит целиком
 	DBURL string
 
+	// хранит составные части подключения когда строка подключения не передана
 	DBHost string
 	DBPort string
 
+	// хранит секреты и адреса внешних зависимостей
 	DBUser               string
 	DBPassword           string
 	DBName               string
@@ -21,6 +24,7 @@ type Config struct {
 	NotificationGRPCAddr string
 }
 
+// загружает настройки из окружения и локального файла для разработки
 func Load() *Config {
 
 	if err := godotenv.Load(); err != nil {
@@ -43,6 +47,7 @@ func Load() *Config {
 	}
 }
 
+// собирает строку подключения из частей если целое значение не задано
 func (c *Config) DatabaseURL() string {
 	if c.DBURL != "" {
 		return c.DBURL

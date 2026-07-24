@@ -12,6 +12,7 @@ type ProductRepository struct {
 	db dbtx.DBTX
 }
 
+// создает репозиторий товаров поверх интерфейса пула или транзакции
 func NewProductRepository(
 	db dbtx.DBTX,
 ) *ProductRepository {
@@ -20,6 +21,7 @@ func NewProductRepository(
 	}
 }
 
+// записывает новый товар и возвращает его идентификатор
 func (r *ProductRepository) Create(
 	ctx context.Context,
 	product *model.Product,
@@ -54,6 +56,7 @@ func (r *ProductRepository) Create(
 	return id, nil
 }
 
+// возвращает только активные товары для публичного api
 func (r *ProductRepository) GetByID(
 	ctx context.Context,
 	id int64,
@@ -86,6 +89,7 @@ func (r *ProductRepository) GetByID(
 	return &product, nil
 }
 
+// читает публичный каталог товаров
 func (r *ProductRepository) GetAll(
 	ctx context.Context,
 ) ([]model.Product, error) {
@@ -131,6 +135,7 @@ func (r *ProductRepository) GetAll(
 	return products, nil
 }
 
+// читает весь каталог без фильтра по активности для админки
 func (r *ProductRepository) GetAllForAdmin(
 	ctx context.Context,
 ) ([]model.Product, error) {
@@ -177,6 +182,7 @@ func (r *ProductRepository) GetAllForAdmin(
 	return products, nil
 }
 
+// уменьшает остаток только если товара хватает на заказ
 func (r *ProductRepository) DecreaseStock(
 	ctx context.Context,
 	productID int64,
@@ -208,6 +214,7 @@ func (r *ProductRepository) DecreaseStock(
 	return nil
 }
 
+// полностью обновляет карточку товара
 func (r *ProductRepository) UpdateProduct(
 	ctx context.Context,
 	product *model.Product,
@@ -242,6 +249,7 @@ func (r *ProductRepository) UpdateProduct(
 	return nil
 }
 
+// переключает видимость товара в каталоге
 func (r *ProductRepository) SetActive(
 	ctx context.Context,
 	productID int64,

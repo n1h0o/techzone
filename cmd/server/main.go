@@ -25,6 +25,7 @@ import (
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// поднимает http сервер и завершает его через graceful shutdown
 func main() {
 
 	_ = godotenv.Load()
@@ -41,6 +42,7 @@ func main() {
 	}
 
 	srv := &http.Server{
+		// ограничивает медленные соединения и защищает процесс от зависших клиентов
 		Addr:              ":" + port,
 		Handler:           application.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -72,6 +74,7 @@ func main() {
 
 	log.Println("shutting down server")
 
+	// дает активным запросам короткое окно чтобы завершиться без обрыва
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		5*time.Second,
