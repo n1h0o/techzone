@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: notification
+  namespace: techzone
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: notification
+
+  template:
+    metadata:
+      labels:
+        app: notification
+
+    spec:
+      containers:
+        - name: notification
+
+          image: techzone-notification:latest
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 50051
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: techzone-config
+                  key: DB_HOST
+
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: techzone-config
+                  key: DB_PORT
+
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: techzone-config
+                  key: POSTGRES_DB
+
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: techzone-config
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: techzone-secret
+                  key: POSTGRES_PASSWORD
+
+            - name: KAFKA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: techzone-config
+                  key: KAFKA_BROKERS

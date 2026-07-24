@@ -3,20 +3,21 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	notificationClient "techzone/internal/grpcclient/notification"
 	"techzone/internal/middleware"
-	"techzone/internal/service"
+	"techzone/internal/notification/pb"
 	"techzone/pkg/jwt"
 )
 
 type NotificationHandler struct {
-	notificationService *service.NotificationService
+	notificationClient *notificationClient.Client
 }
 
 func NewNotificationHandler(
-	notificationService *service.NotificationService,
+	notificationClient *notificationClient.Client,
 ) *NotificationHandler {
 	return &NotificationHandler{
-		notificationService: notificationService,
+		notificationClient: notificationClient,
 	}
 }
 
@@ -47,13 +48,28 @@ func (h *NotificationHandler) GetNotifications(
 		return
 	}
 
-	notifications, err := h.notificationService.GetNotifications(
+	resp, err := h.notificationClient.GetNotifications(
 		r.Context(),
-		claims.UserID,
+		&pb.GetNotificationsRequest{
+			UserId: claims.UserID,
+		},
 	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	notifications := make([]NotificationResponse, 0, len(resp.Notifications))
+
+	for _, n := range resp.Notifications {
+		notifications = append(notifications, NotificationResponse{
+			ID:        n.Id,
+			UserID:    n.UserId,
+			OrderID:   n.OrderId,
+			Message:   n.Message,
+			CreatedAt: n.CreatedAt.AsTime(),
+		},
+		)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

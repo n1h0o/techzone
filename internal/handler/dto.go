@@ -1,6 +1,9 @@
 package handler
 
-import "techzone/internal/model"
+import (
+	"techzone/internal/model"
+	"time"
+)
 
 type MessageResponse struct {
 	Message string `json:"message"`
@@ -41,8 +44,15 @@ type UpdateStatusRequest struct {
 	Status string `json:"status" example:"processing"`
 }
 
+type NotificationResponse struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	OrderID   int64     `json:"order_id"`
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"created_at"`
+}
 type NotificationsResponse struct {
-	Notifications []model.Notification `json:"notifications"`
+	Notifications []NotificationResponse `json:"notifications"`
 }
 
 type PaymentRequest struct {

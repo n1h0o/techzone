@@ -2,15 +2,16 @@ package repository
 
 import (
 	"context"
-	"techzone/internal/model"
+	"techzone/internal/notification/model"
+	"techzone/pkg/dbtx"
 )
 
 type NotificationRepository struct {
-	db DBTX
+	db dbtx.DBTX
 }
 
 func NewNotificationRepository(
-	db DBTX,
+	db dbtx.DBTX,
 ) *NotificationRepository {
 	return &NotificationRepository{
 		db: db,

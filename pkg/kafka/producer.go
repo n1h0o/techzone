@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"techzone/internal/event"
+	"techzone/internal/metrics"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -35,10 +36,13 @@ func (p *Producer) PublishOrderCreated(
 		Value: data,
 	}
 
-	return p.client.ProduceSync(
-		ctx,
-		record,
-	).FirstErr()
+	err = p.client.ProduceSync(ctx, record).FirstErr()
+	if err != nil {
+		return err
+	}
+
+	metrics.KafkaMessagesProducedTotal.Inc()
+	return nil
 }
 
 func (p *Producer) PublishPaymentCompleted(

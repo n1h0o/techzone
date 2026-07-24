@@ -3,14 +3,15 @@ package repository
 import (
 	"context"
 	"techzone/internal/model"
+	"techzone/pkg/dbtx"
 )
 
 type UserRepository struct {
-	db DBTX
+	db dbtx.DBTX
 }
 
 func NewUserRepository(
-	db DBTX,
+	db dbtx.DBTX,
 ) *UserRepository {
 	return &UserRepository{
 		db: db,

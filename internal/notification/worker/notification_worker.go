@@ -1,8 +1,9 @@
-package service
+package worker
 
 import (
 	"context"
 	"log"
+	"techzone/internal/metrics"
 )
 
 type NotificationJob struct {
@@ -15,17 +16,26 @@ type NotificationJob struct {
 type NotificationWorkerPool struct {
 	jobs chan NotificationJob
 
-	notificationRepo *NotificationService
+	notificationCreator NotificationCreator
+}
+
+type NotificationCreator interface {
+	CreateNotification(
+		ctx context.Context,
+		userID int64,
+		orderID int64,
+		message string,
+	) error
 }
 
 func NewNotificationWorkerPool(
 	workers int,
-	service *NotificationService,
+	creator NotificationCreator,
 ) *NotificationWorkerPool {
 
 	pool := &NotificationWorkerPool{
-		jobs:             make(chan NotificationJob, 100),
-		notificationRepo: service,
+		jobs:                make(chan NotificationJob, 100),
+		notificationCreator: creator,
 	}
 
 	for i := 0; i < workers; i++ {
@@ -40,7 +50,7 @@ func (p *NotificationWorkerPool) worker(
 ) {
 	for job := range p.jobs {
 
-		err := p.notificationRepo.CreateNotification(
+		err := p.notificationCreator.CreateNotification(
 			context.Background(),
 			job.UserID,
 			job.OrderID,
@@ -53,8 +63,10 @@ func (p *NotificationWorkerPool) worker(
 				id,
 				err,
 			)
+			continue
 		}
 
+		metrics.NotificationsCreatedTotal.Inc()
 		log.Printf(
 			"[worker=%d] sending notification order=%d user=%d",
 			id,

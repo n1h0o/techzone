@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"techzone/internal/app"
+	"techzone/internal/metrics"
 	"time"
 
 	_ "techzone/docs"
@@ -43,6 +44,8 @@ func main() {
 		Addr:    ":" + port,
 		Handler: application.Handler(),
 	}
+
+	metrics.Init()
 
 	go func() {
 		log.Printf("server started on :%s", port)

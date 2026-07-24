@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"techzone/internal/model"
+	"techzone/pkg/dbtx"
 )
 
 type CartRepository struct {
-	db DBTX
+	db dbtx.DBTX
 }
 
 func NewCartRepository(
-	db DBTX,
+	db dbtx.DBTX,
 ) *CartRepository {
 	return &CartRepository{
 		db: db,

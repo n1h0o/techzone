@@ -1,0 +1,162 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"techzone/internal/config"
+	grpcserver "techzone/internal/notification/grpc"
+	"techzone/internal/notification/kafka"
+	"techzone/internal/notification/repository"
+	"techzone/internal/notification/service"
+	"techzone/internal/notification/worker"
+	pkg "techzone/pkg/kafka"
+	"techzone/pkg/postgres"
+
+	"google.golang.org/grpc"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/twmb/franz-go/pkg/kgo"
+)
+
+type App struct {
+	grpcServer *grpc.Server
+
+	config *config.Config
+
+	notificationService *service.NotificationService
+
+	db *pgxpool.Pool
+
+	consumer       *kafka.Consumer
+	consumerClient *kgo.Client
+
+	cancel context.CancelFunc
+}
+
+type Dependencies struct {
+	Config         *config.Config
+	DB             *pgxpool.Pool
+	ConsumerClient *kgo.Client
+	Cancel         context.CancelFunc
+}
+
+func BuildDependencies() (*Dependencies, error) {
+	cfg := config.Load()
+
+	dbURL := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+	)
+
+	db, err := postgres.New(dbURL)
+	if err != nil {
+		return nil, err
+	}
+
+	consumerClient, err := pkg.NewConsumerClient()
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	return &Dependencies{
+		Config:         cfg,
+		DB:             db,
+		ConsumerClient: consumerClient,
+	}, nil
+}
+func New(
+	deps *Dependencies,
+) (*App, error) {
+	if deps == nil {
+		return nil, errors.New("dependencies are nil")
+	}
+	if deps.Config == nil {
+		return nil, errors.New("config is nil")
+	}
+	if deps.DB == nil {
+		return nil, errors.New("db is nil")
+	}
+	notificationRepo := repository.NewNotificationRepository(deps.DB)
+	notificationService := service.NewNotificationService(notificationRepo)
+
+	workerPool := worker.NewNotificationWorkerPool(
+		5,
+		notificationService,
+	)
+
+	consumer := kafka.NewConsumer(
+		deps.ConsumerClient,
+		workerPool,
+	)
+
+	grpcServer := grpc.NewServer()
+
+	grpcNotificationServer := grpcserver.NewServer(
+		notificationService,
+	)
+
+	grpcserver.Register(
+		grpcServer,
+		grpcNotificationServer,
+	)
+
+	return &App{
+		grpcServer:          grpcServer,
+		config:              deps.Config,
+		notificationService: notificationService,
+		consumer:            consumer,
+		db:                  deps.DB,
+		consumerClient:      deps.ConsumerClient,
+		cancel:              deps.Cancel,
+	}, nil
+}
+
+func (a *App) Close() {
+
+	if a.cancel != nil {
+		a.cancel()
+	}
+	if a.consumerClient != nil {
+		a.consumerClient.Close()
+	}
+	if a.db != nil {
+		a.db.Close()
+	}
+}
+
+func (a *App) Run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		return err
+	}
+	log.Println("Kafka consumer started")
+	go a.consumer.Start(ctx)
+
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+
+		log.Println("metrics server started on :9091")
+
+		if err := http.ListenAndServe(":9091", mux); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	log.Println("gRPC server started on :50051")
+
+	return a.grpcServer.Serve(lis)
+}

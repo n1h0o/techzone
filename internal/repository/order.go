@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"techzone/internal/model"
+	"techzone/pkg/dbtx"
 )
 
 type OrderRepository struct {
-	db DBTX
+	db dbtx.DBTX
 }
 
 func NewOrderRepository(
-	db DBTX,
+	db dbtx.DBTX,
 ) *OrderRepository {
 	return &OrderRepository{
 		db: db,

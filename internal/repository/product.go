@@ -5,14 +5,15 @@ import (
 	"errors"
 	"log"
 	"techzone/internal/model"
+	"techzone/pkg/dbtx"
 )
 
 type ProductRepository struct {
-	db DBTX
+	db dbtx.DBTX
 }
 
 func NewProductRepository(
-	db DBTX,
+	db dbtx.DBTX,
 ) *ProductRepository {
 	return &ProductRepository{
 		db: db,

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"techzone/internal/event"
+	"techzone/internal/metrics"
 	"techzone/internal/model"
 	"techzone/internal/repository"
 
@@ -201,6 +202,7 @@ func (s *OrderService) CreateOrder(
 		userID,
 		sum,
 	)
+	metrics.OrdersCreatedTotal.Inc()
 	return orderID, nil
 }
 

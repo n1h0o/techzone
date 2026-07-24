@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"log"
 	"techzone/internal/event"
-	"techzone/internal/service"
+	"techzone/internal/metrics"
+	"techzone/internal/notification/worker"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -13,12 +14,12 @@ import (
 type Consumer struct {
 	client *kgo.Client
 
-	workerPool *service.NotificationWorkerPool
+	workerPool *worker.NotificationWorkerPool
 }
 
 func NewConsumer(
 	client *kgo.Client,
-	workerPool *service.NotificationWorkerPool,
+	workerPool *worker.NotificationWorkerPool,
 ) *Consumer {
 	return &Consumer{
 		client:     client,
@@ -29,6 +30,7 @@ func NewConsumer(
 func (c *Consumer) Start(
 	ctx context.Context,
 ) {
+	log.Println("Kafka consumer started")
 	for {
 		select {
 		case <-ctx.Done():
@@ -70,14 +72,19 @@ func (c *Consumer) handleOrderCreated(
 	}
 
 	c.workerPool.Submit(
-		service.NotificationJob{
+		worker.NotificationJob{
 			UserID:  evt.UserID,
 			OrderID: evt.OrderID,
 			Message: "Заказ успешно создан",
 		},
 	)
 
-	return c.client.CommitRecords(ctx, record)
+	if err := c.client.CommitRecords(ctx, record); err != nil {
+		return err
+	}
+
+	metrics.KafkaMessagesConsumedTotal.Inc()
+	return nil
 }
 
 func (c *Consumer) handlePaymentCreated(
@@ -95,7 +102,7 @@ func (c *Consumer) handlePaymentCreated(
 	}
 
 	c.workerPool.Submit(
-		service.NotificationJob{
+		worker.NotificationJob{
 			UserID:  evt.UserID,
 			OrderID: evt.OrderID,
 			Message: "Оплата заказа успешно выполнена",

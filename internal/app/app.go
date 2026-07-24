@@ -3,22 +3,25 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"techzone/internal/config"
 	"techzone/internal/event"
+	notificationgrpc "techzone/internal/grpcclient/notification"
 	"techzone/internal/handler"
 	"techzone/internal/middleware"
 	"techzone/internal/payment"
 	"techzone/internal/repository"
 	"techzone/internal/seed"
 	"techzone/internal/service"
-	"techzone/pkg/kafka"
+	pkg "techzone/pkg/kafka"
 	"techzone/pkg/postgres"
 	"techzone/pkg/redis"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	goredis "github.com/redis/go-redis/v9"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -41,6 +44,8 @@ func (MockPublisher) PublishPaymentCompleted(
 }
 
 type App struct {
+	notificationClient *notificationgrpc.Client
+
 	handler http.Handler
 
 	db *pgxpool.Pool
@@ -59,15 +64,16 @@ type ServerOptions struct {
 }
 
 type Dependencies struct {
-	Config         *config.Config
-	DB             *pgxpool.Pool
-	RedisClient    *goredis.Client
-	EventPublisher service.EventPublisher
-	PaymentGateway payment.Gateway
-	ProducerClient *kgo.Client
-	ConsumerClient *kgo.Client
-	Cancel         context.CancelFunc
-	SeedAdmin      bool
+	NotificationClient *notificationgrpc.Client
+	Config             *config.Config
+	DB                 *pgxpool.Pool
+	RedisClient        *goredis.Client
+	EventPublisher     service.EventPublisher
+	PaymentGateway     payment.Gateway
+	ProducerClient     *kgo.Client
+	ConsumerClient     *kgo.Client
+	Cancel             context.CancelFunc
+	SeedAdmin          bool
 }
 
 func NewServer(testMode bool) (*App, error) {
@@ -98,7 +104,17 @@ func BuildDependencies(
 	options ServerOptions,
 ) (*Dependencies, error) {
 	cfg := config.Load()
-	db, err := postgres.New()
+
+	dbURL := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+	)
+
+	db, err := postgres.New(dbURL)
 	if err != nil {
 		return nil, err
 	}
@@ -109,35 +125,37 @@ func BuildDependencies(
 		return nil, err
 	}
 
+	notificationClient, err := notificationgrpc.New(cfg.NotificationGRPCAddr)
+	if err != nil {
+		redisClient.Close()
+		db.Close()
+		return nil, err
+	}
+
+	producerClient, err := pkg.NewProducerClient()
+	if err != nil {
+		notificationClient.Close()
+		redisClient.Close()
+		db.Close()
+		return nil, err
+	}
+
+	publisher := pkg.NewProducer(producerClient)
+
 	deps := &Dependencies{
-		Config:         cfg,
-		DB:             db,
-		RedisClient:    redisClient,
-		EventPublisher: MockPublisher{},
-		PaymentGateway: payment.NewMockGateway(),
-		SeedAdmin:      options.SeedAdmin,
+		NotificationClient: notificationClient,
+		Config:             cfg,
+		DB:                 db,
+		RedisClient:        redisClient,
+		EventPublisher:     publisher,
+		ProducerClient:     producerClient,
+		PaymentGateway:     payment.NewMockGateway(),
+		SeedAdmin:          options.SeedAdmin,
 	}
 
 	if options.TestMode || os.Getenv("KAFKA_BROKERS") == "" {
 		return deps, nil
 	}
-
-	producerClient, err := kafka.NewProducerClient()
-	if err != nil {
-		closeDependencies(deps)
-		return nil, err
-	}
-
-	consumerClient, err := kafka.NewConsumerClient()
-	if err != nil {
-		producerClient.Close()
-		closeDependencies(deps)
-		return nil, err
-	}
-
-	deps.EventPublisher = kafka.NewProducer(producerClient)
-	deps.ProducerClient = producerClient
-	deps.ConsumerClient = consumerClient
 
 	return deps, nil
 }
@@ -163,6 +181,9 @@ func NewWithDependencies(
 	if deps.PaymentGateway == nil {
 		return nil, errors.New("payment gateway is nil")
 	}
+	if deps.NotificationClient == nil {
+		return nil, errors.New("notification client is nil")
+	}
 
 	userRepo := repository.NewUserRepository(deps.DB)
 	if deps.SeedAdmin {
@@ -170,6 +191,8 @@ func NewWithDependencies(
 			return nil, err
 		}
 	}
+
+	notificationHandler := handler.NewNotificationHandler(deps.NotificationClient)
 
 	authService := service.NewAuthService(userRepo)
 	authHandler := handler.NewAuthHandler(authService, deps.Config)
@@ -183,31 +206,6 @@ func NewWithDependencies(
 	cartHandler := handler.NewCartHandler(cartService)
 
 	orderRepo := repository.NewOrderRepository(deps.DB)
-	notificationRepo := repository.NewNotificationRepository(
-		deps.DB,
-	)
-	notificationService := service.NewNotificationService(
-		notificationRepo,
-	)
-	notificationPool := service.NewNotificationWorkerPool(
-		5,
-		notificationService,
-	)
-	notificationHandler := handler.NewNotificationHandler(
-		notificationService,
-	)
-
-	if deps.ConsumerClient != nil {
-		consumer := kafka.NewConsumer(
-			deps.ConsumerClient,
-			notificationPool,
-		)
-
-		ctx, cancel := context.WithCancel(context.Background())
-		deps.Cancel = cancel
-
-		go consumer.Start(ctx)
-	}
 
 	orderService := service.NewOrderService(
 		orderRepo,
@@ -328,9 +326,7 @@ func NewWithDependencies(
 	mux.Handle(
 		"GET /notifications",
 		middleware.AuthMiddleware(deps.Config)(
-			http.HandlerFunc(
-				notificationHandler.GetNotifications,
-			),
+			http.HandlerFunc(notificationHandler.GetNotifications),
 		),
 	)
 
@@ -346,10 +342,19 @@ func NewWithDependencies(
 		httpSwagger.WrapHandler,
 	)
 
-	handlerWithCors := middleware.CORSMiddleware(mux)
+	mux.Handle(
+		"GET /metrics",
+		promhttp.Handler(),
+	)
+
+	handler := middleware.MetricsMiddleware(mux)
+	handler = middleware.CORSMiddleware(handler)
 
 	return &App{
-		handler: handlerWithCors,
+
+		notificationClient: deps.NotificationClient,
+
+		handler: handler,
 
 		db: deps.DB,
 
@@ -366,6 +371,10 @@ func NewWithDependencies(
 func closeDependencies(deps *Dependencies) {
 	if deps == nil {
 		return
+	}
+
+	if deps.NotificationClient != nil {
+		_ = deps.NotificationClient.Close()
 	}
 
 	if deps.Cancel != nil {
@@ -399,6 +408,10 @@ func (a *App) Close() {
 
 	if a.cancel != nil {
 		a.cancel()
+	}
+
+	if a.notificationClient != nil {
+		_ = a.notificationClient.Close()
 	}
 
 	if a.consumerClient != nil {

@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"techzone/internal/model"
+	"techzone/pkg/dbtx"
 )
 
 type PaymentRepository struct {
-	db DBTX
+	db dbtx.DBTX
 }
 
 func NewPaymentRepository(
-	db DBTX,
+	db dbtx.DBTX,
 ) *PaymentRepository {
 	return &PaymentRepository{
 		db: db,

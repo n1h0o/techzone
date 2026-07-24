@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"techzone/internal/model"
+	"techzone/internal/notification/model"
 )
 
 type NotificationRepository interface {
