@@ -36,6 +36,13 @@ func (m *MockOrderRepo) GetByID(
 	return m.Order, m.OrderErr
 }
 
+func (m *MockOrderRepo) GetByIDForAdmin(
+	ctx context.Context,
+	orderID int64,
+) (*model.Order, error) {
+	return m.Order, m.OrderErr
+}
+
 func (m *MockOrderRepo) GetItems(
 	ctx context.Context,
 	orderID int64,
@@ -89,6 +96,7 @@ func TestUpdateStatus_NewToProcessing(t *testing.T) {
 		1,
 		"processing",
 		1,
+		false,
 	)
 
 	if err != nil {
@@ -124,6 +132,7 @@ func TestUpdateStatus_NewToCompleted(t *testing.T) {
 		1,
 		"completed",
 		1,
+		false,
 	)
 
 	if err == nil {
@@ -159,6 +168,7 @@ func TestUpdateStatus_ProcessingToCompleted(t *testing.T) {
 		1,
 		"completed",
 		1,
+		false,
 	)
 
 	if err != nil {
@@ -192,6 +202,7 @@ func TestUpdateStatus_CompletedOrder(t *testing.T) {
 		1,
 		"processing",
 		1,
+		false,
 	)
 	if err == nil {
 		t.Fatal(err)
@@ -224,6 +235,7 @@ func TestUpdateStatus_InvalidStatus(t *testing.T) {
 		1,
 		"ok",
 		1,
+		false,
 	)
 	if err == nil {
 		t.Fatal("expected error")

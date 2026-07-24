@@ -152,6 +152,39 @@ func (r *OrderRepository) GetByID(
 	return &order, nil
 }
 
+func (r *OrderRepository) GetByIDForAdmin(
+	ctx context.Context,
+	orderID int64,
+) (*model.Order, error) {
+	var order model.Order
+
+	err := r.db.QueryRow(
+		ctx,
+		`
+		SELECT
+		id,
+		user_id,
+		status,
+		total_price,
+		created_at
+		FROM orders
+		WHERE id = $1
+		`,
+		orderID,
+	).Scan(
+		&order.ID,
+		&order.UserID,
+		&order.Status,
+		&order.TotalPrice,
+		&order.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &order, nil
+}
+
 func (r *OrderRepository) GetItems(
 	ctx context.Context,
 	orderID int64,

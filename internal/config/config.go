@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -8,6 +9,8 @@ import (
 )
 
 type Config struct {
+	DBURL string
+
 	DBHost string
 	DBPort string
 
@@ -25,6 +28,7 @@ func Load() *Config {
 	}
 
 	return &Config{
+		DBURL: os.Getenv("DB_URL"),
 
 		DBHost: os.Getenv("DB_HOST"),
 		DBPort: os.Getenv("DB_PORT"),
@@ -37,4 +41,29 @@ func Load() *Config {
 
 		NotificationGRPCAddr: os.Getenv("NOTIFICATION_GRPC_ADDR"),
 	}
+}
+
+func (c *Config) DatabaseURL() string {
+	if c.DBURL != "" {
+		return c.DBURL
+	}
+
+	host := c.DBHost
+	if host == "" {
+		host = "localhost"
+	}
+
+	port := c.DBPort
+	if port == "" {
+		port = "5432"
+	}
+
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		c.DBUser,
+		c.DBPassword,
+		host,
+		port,
+		c.DBName,
+	)
 }

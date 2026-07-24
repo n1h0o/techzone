@@ -12,6 +12,7 @@ import (
 )
 
 func TestRegister(t *testing.T) {
+	requireIntegration(t)
 
 	server := httptest.NewServer(
 		mustNewTestApp(t).Handler(),

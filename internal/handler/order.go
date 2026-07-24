@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"techzone/internal/middleware"
@@ -46,8 +45,6 @@ func (h *OrderHandler) CreateOrder(
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
-	log.Println("USER ID", claims.UserID)
 
 	orderID, err := h.orderService.CreateOrder(
 		r.Context(),
@@ -236,6 +233,7 @@ func (h *OrderHandler) UpdateStatus(
 		orderID,
 		req.Status,
 		claims.UserID,
+		claims.Role == "admin",
 	); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

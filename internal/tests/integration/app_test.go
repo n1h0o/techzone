@@ -7,6 +7,7 @@ import (
 
 func mustNewTestApp(t *testing.T) *app.App {
 	t.Helper()
+	requireIntegration(t)
 
 	application, err := app.NewServer(true)
 	if err != nil {

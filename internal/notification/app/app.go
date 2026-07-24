@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -21,6 +20,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"time"
 )
 
 type App struct {
@@ -48,16 +48,7 @@ type Dependencies struct {
 func BuildDependencies() (*Dependencies, error) {
 	cfg := config.Load()
 
-	dbURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-	)
-
-	db, err := postgres.New(dbURL)
+	db, err := postgres.New(cfg.DatabaseURL())
 	if err != nil {
 		return nil, err
 	}
@@ -148,10 +139,16 @@ func (a *App) Run() error {
 	go func() {
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
+		metricsServer := &http.Server{
+			Addr:              ":9091",
+			Handler:           mux,
+			ReadHeaderTimeout: 5 * time.Second,
+		}
 
 		log.Println("metrics server started on :9091")
 
-		if err := http.ListenAndServe(":9091", mux); err != nil {
+		if err := metricsServer.ListenAndServe(); err != nil &&
+			!errors.Is(err, http.ErrServerClosed) {
 			log.Println(err)
 		}
 	}()

@@ -35,6 +35,11 @@ type OrderRepository interface {
 		userID int64,
 	) (*model.Order, error)
 
+	GetByIDForAdmin(
+		ctx context.Context,
+		orderID int64,
+	) (*model.Order, error)
+
 	GetItems(
 		ctx context.Context,
 		orderID int64,
@@ -247,13 +252,25 @@ func (s *OrderService) UpdateStatus(
 	orderID int64,
 	status string,
 	userID int64,
+	isAdmin bool,
 ) error {
-
-	order, err := s.orderRepo.GetByID(
-		ctx,
-		orderID,
-		userID,
+	var (
+		order *model.Order
+		err   error
 	)
+
+	if isAdmin {
+		order, err = s.orderRepo.GetByIDForAdmin(
+			ctx,
+			orderID,
+		)
+	} else {
+		order, err = s.orderRepo.GetByID(
+			ctx,
+			orderID,
+			userID,
+		)
+	}
 	if err != nil {
 		return err
 	}

@@ -9,6 +9,7 @@ import (
 
 func createAdmin(t *testing.T) {
 	t.Helper()
+	requireIntegration(t)
 
 	hash, err := bcrypt.GenerateFromPassword(
 		[]byte("123456"),
@@ -47,6 +48,7 @@ func paymentCount(
 ) int {
 
 	t.Helper()
+	requireIntegration(t)
 
 	var count int
 
@@ -69,6 +71,7 @@ func paymentCount(
 
 func cleanDatabase(t *testing.T) {
 	t.Helper()
+	requireIntegration(t)
 
 	_, err := db.Exec(
 		context.Background(),

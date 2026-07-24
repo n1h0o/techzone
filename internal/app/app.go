@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -105,16 +104,7 @@ func BuildDependencies(
 ) (*Dependencies, error) {
 	cfg := config.Load()
 
-	dbURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-	)
-
-	db, err := postgres.New(dbURL)
+	db, err := postgres.New(cfg.DatabaseURL())
 	if err != nil {
 		return nil, err
 	}
